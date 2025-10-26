@@ -128,8 +128,28 @@ class MemoryGlassesApp extends AppServer {
 
       // Save conversation summary if session ended
       if (this.conversationManager) {
-        await this.conversationManager.endConversation();
-        console.log('Conversation summary saved');
+        const summaryResult = await this.conversationManager.endConversation();
+
+        if (summaryResult.peopleUpdated.length > 0) {
+          // Show farewell message with summary preview
+          const farewell = summaryResult.peopleUpdated.length === 1
+            ? `Goodbye ${summaryResult.peopleUpdated[0]}!`
+            : `Goodbye everyone!`;
+
+          const topicsText = summaryResult.topics && summaryResult.topics.length > 0
+            ? `\nTopics: ${summaryResult.topics.slice(0, 3).join(', ')}`
+            : '';
+
+          session.layouts.showTextWall(
+            `${farewell}\n\nConversation saved!${topicsText}`,
+            {
+              view: ViewType.MAIN,
+              durationMs: 3000
+            }
+          );
+
+          console.log(`\n✓ Updated ${summaryResult.peopleUpdated.length} person records`);
+        }
       }
     });
 

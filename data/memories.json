@@ -1,0 +1,16 @@
+{
+  "people": {
+    "person_Speaker A": {
+      "name": "Dave",
+      "speakerId": "Speaker A",
+      "lastMet": "2025-10-26T07:56:03.480Z",
+      "lastConversation": "Speaker A talks about clothing choices and preferences, while also confirming a meeting time.",
+      "lastTopics": [
+        "Clothing Preferences",
+        "Meeting Time"
+      ]
+    }
+  },
+  "version": "1.0.0",
+  "lastModified": "2025-10-26T07:56:03.481Z"
+}

@@ -121,16 +121,41 @@ export class ConversationManager {
   /**
    * End current conversation and save summary
    */
-  async endConversation(): Promise<void> {
-    if (this.conversationBuffer.length === 0) return;
+  async endConversation(): Promise<{
+    summary?: string;
+    topics?: string[];
+    peopleUpdated: string[];
+  }> {
+    const result = {
+      summary: undefined as string | undefined,
+      topics: undefined as string[] | undefined,
+      peopleUpdated: [] as string[]
+    };
+
+    if (this.conversationBuffer.length === 0) {
+      console.log('No conversation to summarize');
+      return result;
+    }
 
     const transcript = this.conversationBuffer
       .map(seg => seg.text)
       .join('\n');
 
+    console.log('\n=== Generating Conversation Summary ===');
+    console.log(`Transcript length: ${transcript.length} characters`);
+    console.log(`People involved: ${Array.from(this.speakerNames.values()).join(', ')}`);
+
     try {
       // Generate summary
       const summary = await this.nameExtractor.summarizeConversation(transcript);
+
+      console.log('\n✓ Summary generated:');
+      console.log(`  Main topics: ${summary.mainTopics.join(', ')}`);
+      console.log(`  Summary: ${summary.summary}`);
+      console.log(`  Key points: ${summary.keyPoints.length} points`);
+
+      result.summary = summary.summary;
+      result.topics = summary.mainTopics;
 
       // Update all people involved in the conversation
       for (const [speakerId, name] of this.speakerNames.entries()) {
@@ -143,10 +168,13 @@ export class ConversationManager {
             lastTopics: summary.mainTopics,
             lastMet: new Date()
           });
+
+          result.peopleUpdated.push(name);
+          console.log(`✓ Updated ${name} with conversation summary`);
         }
       }
 
-      console.log('Conversation summary saved');
+      console.log('\n✓ Conversation summary saved successfully');
     } catch (error) {
       console.error('Error ending conversation:', error);
     }
@@ -155,6 +183,8 @@ export class ConversationManager {
     this.conversationBuffer = [];
     this.activeSpeakers.clear();
     this.utteranceCount = 0;
+
+    return result;
   }
 
   /**
