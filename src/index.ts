@@ -85,60 +85,99 @@ class MemoryGlassesApp extends AppServer {
     let lastProcessTime = Date.now();
     const PROCESS_INTERVAL = 30000; // Process every 30 seconds
 
+    // Track speaker corrections from diarization
+    const speakerAssignments = new Map<number, string>();  // timestamp -> speaker ID
+
     // Choose transcription method based on diarization setting
     if (this.useDiarization && this.diarizationService) {
-      console.log('✓ Using AssemblyAI for speaker-diarized transcription');
+      console.log('✓ Using hybrid diarization (immediate transcription + async speaker detection)');
 
-      // Start AssemblyAI real-time transcription with diarization
-      await this.diarizationService.startRealtime(async (segment) => {
-        if (!this.conversationManager || !segment.isFinal) return;
-
-        console.log(`[${segment.speaker}] ${segment.text}`);
-        transcriptBuffer.push(segment.text);
-
-        // Process transcription with speaker ID
-        const result = await this.conversationManager.processTranscription(
-          segment.speaker,
-          segment.text,
-          true
-        );
-
-        // Handle speaker recognition
-        if (result.action === 'speaker_recognized' && result.data) {
-          const person = result.data.person;
-          const message = `Hello ${person.name}!\n${person.lastConversation ? `Last: ${person.lastConversation}` : 'Good to see you!'}`;
-
-          session.layouts.showTextWall(message, {
-            view: ViewType.MAIN,
-            durationMs: 5000
-          });
-
-          console.log(`\n✓ Recognized: ${person.name}`);
-          if (person.lastTopics) {
-            console.log(`  Topics: ${person.lastTopics.join(', ')}`);
+      // Start hybrid diarization
+      await this.diarizationService.startHybrid(
+        async (segment) => {
+          // This callback is for future use (not used in hybrid mode)
+        },
+        (corrections) => {
+          // Handle speaker corrections from async diarization
+          console.log(`\n📊 Received speaker corrections: ${corrections.size} assignments`);
+          for (const [timestamp, speaker] of corrections.entries()) {
+            speakerAssignments.set(timestamp, speaker);
           }
-        }
+        },
+        16000  // 16kHz sample rate
+      );
 
-        // Periodic processing for name extraction
-        const now = Date.now();
-        if (now - lastProcessTime > PROCESS_INTERVAL && transcriptBuffer.length > 0) {
-          await this.processBufferedTranscripts(session, transcriptBuffer);
-          transcriptBuffer = [];
-          lastProcessTime = now;
-        }
-      }, 16000);  // 16kHz sample rate
-
-      // Subscribe to audio chunks from MentraOS and forward to AssemblyAI
+      // Subscribe to audio chunks from MentraOS and buffer for diarization
       session.subscribe(StreamType.AUDIO_CHUNK);
       session.events.onAudioChunk((audioData) => {
         if (this.diarizationService && audioData.arrayBuffer) {
-          // Convert ArrayBuffer to Buffer and send to AssemblyAI
+          // Convert ArrayBuffer to Buffer and buffer for diarization
           const buffer = Buffer.from(audioData.arrayBuffer);
-          this.diarizationService.sendAudio(buffer);
+          this.diarizationService.bufferAudio(buffer);
         }
       });
 
-      console.log('✓ Audio streaming to AssemblyAI started');
+      // Use MentraOS transcription for immediate feedback
+      session.events.onTranscription(async (data) => {
+        if (!this.conversationManager) return;
+
+        if (data.isFinal && data.text.trim()) {
+          const timestamp = Date.now();
+
+          // Buffer the transcript for diarization matching
+          if (this.diarizationService) {
+            this.diarizationService.bufferTranscript(data.text, timestamp);
+          }
+
+          // Initially assign as "Speaker A", will be corrected later by diarization
+          let speaker = "Speaker A";
+
+          // Check if we have a correction for this timestamp (±2 seconds)
+          for (const [corrTimestamp, corrSpeaker] of speakerAssignments.entries()) {
+            if (Math.abs(corrTimestamp - timestamp) < 2000) {
+              speaker = corrSpeaker;
+              console.log(`✓ Using corrected speaker: ${speaker}`);
+              break;
+            }
+          }
+
+          console.log(`[${speaker}] ${data.text}`);
+          transcriptBuffer.push(data.text);
+
+          // Process transcription with speaker ID (may be corrected)
+          const result = await this.conversationManager.processTranscription(
+            speaker,
+            data.text,
+            true
+          );
+
+          // Handle speaker recognition
+          if (result.action === 'speaker_recognized' && result.data) {
+            const person = result.data.person;
+            const message = `Hello ${person.name}!\n${person.lastConversation ? `Last: ${person.lastConversation}` : 'Good to see you!'}`;
+
+            session.layouts.showTextWall(message, {
+              view: ViewType.MAIN,
+              durationMs: 5000
+            });
+
+            console.log(`\n✓ Recognized: ${person.name}`);
+            if (person.lastTopics) {
+              console.log(`  Topics: ${person.lastTopics.join(', ')}`);
+            }
+          }
+
+          // Periodic processing for name extraction
+          const now = Date.now();
+          if (now - lastProcessTime > PROCESS_INTERVAL && transcriptBuffer.length > 0) {
+            await this.processBufferedTranscripts(session, transcriptBuffer);
+            transcriptBuffer = [];
+            lastProcessTime = now;
+          }
+        }
+      });
+
+      console.log('✓ Hybrid diarization started (MentraOS transcription + AssemblyAI speaker detection)');
     } else {
       // Fallback: Use MentraOS transcription (no speaker diarization)
       console.log('Using MentraOS transcription (no speaker diarization)');
@@ -196,8 +235,8 @@ class MemoryGlassesApp extends AppServer {
 
       // Stop diarization service if running
       if (this.useDiarization && this.diarizationService) {
-        await this.diarizationService.stopRealtime();
-        console.log('✓ AssemblyAI diarization stopped');
+        await this.diarizationService.stopHybrid();
+        console.log('✓ Hybrid diarization stopped');
       }
 
       // Save conversation summary if session ended
