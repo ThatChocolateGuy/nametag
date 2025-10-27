@@ -13,7 +13,7 @@
   "description": "Smart glasses app for remembering names and conversations",
   "dependencies": {
     "@mentra/sdk": "latest",
-    "assemblyai": "^4.7.3",
+    "assemblyai": "^4.18.4",
     "axios": "^1.7.9",
     "dotenv": "^16.4.7",
     "eventsource": "^4.0.0",
