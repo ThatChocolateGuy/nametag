@@ -26,7 +26,8 @@ npm run dev
 ```
 
 Look for this line in the console:
-```
+
+```md
 - Name Extraction (OpenAI gpt-4o-mini)
 ```
 
@@ -37,11 +38,13 @@ That's it! The app will now use your selected model.
 ### Code Changes
 
 1. **Environment Variable** (`.env.example`)
+
    ```env
    OPENAI_MODEL=gpt-4o-mini
    ```
 
 2. **Service Constructor** (`nameExtractionService.ts`)
+
    ```typescript
    constructor(apiKey: string, model: string = 'gpt-4o-mini') {
      this.client = new OpenAI({ apiKey });
@@ -51,6 +54,7 @@ That's it! The app will now use your selected model.
    ```
 
 3. **Using the Model** (all API calls)
+
    ```typescript
    const response = await this.client.chat.completions.create({
      model: this.model,  // Uses configured model
@@ -59,6 +63,7 @@ That's it! The app will now use your selected model.
    ```
 
 4. **Main App** (`index.ts`)
+
    ```typescript
    const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
    this.nameExtractor = new NameExtractionService(OPENAI_API_KEY, OPENAI_MODEL);
@@ -95,7 +100,7 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
 Always shows which model is being used:
 
-```
+```md
 Memory Glasses App initialized
 Services ready:
 - Memory MCP Client
@@ -107,7 +112,7 @@ Services ready:
 
 Service initialization confirms the model:
 
-```
+```md
 NameExtractionService initialized with model: gpt-4o-mini
 ```
 
@@ -184,24 +189,27 @@ See `MODEL_SELECTION.md` for detailed comparison.
 
 Check console on startup:
 
-```
+```md
 - Name Extraction (OpenAI gpt-4o-mini)
 ```
 
 ### Test Model Switching
 
 1. Edit `.env`:
+
    ```env
    OPENAI_MODEL=gpt-4o
    ```
 
 2. Restart app:
+
    ```bash
    npm run dev
    ```
 
 3. Check console:
-   ```
+
+   ```md
    - Name Extraction (OpenAI gpt-4o)
    ```
 
@@ -210,7 +218,8 @@ Check console on startup:
 Say: "My name is John Smith"
 
 Check console logs:
-```
+
+```md
 NameExtractionService initialized with model: gpt-4o-mini
 Transcription: My name is John Smith
 ✓ Name detected: John Smith (confidence: high)
@@ -221,6 +230,7 @@ Transcription: My name is John Smith
 ✅ **Fully backwards compatible!**
 
 If `.env` doesn't have `OPENAI_MODEL`:
+
 - Uses default: `gpt-4o-mini`
 - No breaking changes
 - Works exactly as before
@@ -248,6 +258,7 @@ async summarizeConversation() {
 ```
 
 Then in `.env`:
+
 ```env
 OPENAI_EXTRACTION_MODEL=gpt-4o-mini
 OPENAI_SUMMARY_MODEL=gpt-4o
@@ -297,6 +308,7 @@ console.log(`Model: ${model}, Cost: $${cost}`);
 **Issue**: Console shows different model than expected
 
 **Solution**:
+
 1. Check `.env` file
 2. Restart the app
 3. Verify no typos in model name
@@ -306,6 +318,7 @@ console.log(`Model: ${model}, Cost: $${cost}`);
 **Issue**: API costs are too high
 
 **Solution**: Switch to cheaper model:
+
 ```env
 OPENAI_MODEL=gpt-4o-mini
 ```
@@ -315,6 +328,7 @@ OPENAI_MODEL=gpt-4o-mini
 **Issue**: Names not being detected correctly
 
 **Solution**: Switch to better model:
+
 ```env
 OPENAI_MODEL=gpt-4o
 ```

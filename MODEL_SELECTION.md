@@ -30,20 +30,24 @@ OPENAI_MODEL=gpt-4o-mini
 ```
 
 **Pros**:
+
 - ⚡ Very fast (500-1500ms)
 - 💰 Extremely cheap ($0.150/$0.600 per 1M tokens)
 - 🎯 Excellent accuracy for structured tasks
 - ✅ Perfect for name extraction and summarization
 
 **Cons**:
+
 - Slightly less capable than GPT-4o for complex reasoning
 
 **Costs** (per operation):
+
 - Name extraction: ~$0.0003
 - Conversation summary: ~$0.001
 - **Daily (10 convos)**: ~$0.015
 
 **When to use**:
+
 - ✅ Default choice for most users
 - ✅ Production deployments
 - ✅ Budget-conscious development
@@ -60,21 +64,25 @@ OPENAI_MODEL=gpt-4o
 ```
 
 **Pros**:
+
 - 🧠 Most capable model
 - 🎯 Best accuracy for complex names
 - 📝 Superior summarization quality
 - 🌍 Better multilingual support
 
 **Cons**:
+
 - 💸 More expensive (15x cost of gpt-4o-mini)
 - ⏱️ Slightly slower
 
 **Costs** (per operation):
+
 - Name extraction: ~$0.005
 - Conversation summary: ~$0.015
 - **Daily (10 convos)**: ~$0.20
 
 **When to use**:
+
 - ✅ Need maximum accuracy
 - ✅ Complex/unusual names
 - ✅ Multilingual conversations
@@ -92,20 +100,24 @@ OPENAI_MODEL=gpt-4-turbo
 ```
 
 **Pros**:
+
 - 🎯 Very good accuracy
 - ⚡ Fast performance
 - 📊 Large context window (128K tokens)
 
 **Cons**:
+
 - 💰 More expensive than gpt-4o-mini
 - 🔄 Being phased out in favor of GPT-4o
 
 **Costs** (per operation):
+
 - Name extraction: ~$0.002
 - Conversation summary: ~$0.006
 - **Daily (10 convos)**: ~$0.08
 
 **When to use**:
+
 - ✅ Need better accuracy than gpt-4o-mini
 - ✅ Working with large conversation transcripts
 - ✅ Want faster than GPT-4o but better than gpt-4o-mini
@@ -121,21 +133,25 @@ OPENAI_MODEL=gpt-3.5-turbo
 ```
 
 **Pros**:
+
 - 💰 Cheapest option ($0.50/$1.50 per 1M tokens)
 - ⚡ Fast responses
 - ✅ Still capable for basic tasks
 
 **Cons**:
+
 - 📉 Lower accuracy than GPT-4 models
 - ⚠️ May miss some names or contexts
 - 🔄 Being phased out
 
 **Costs** (per operation):
+
 - Name extraction: ~$0.0001
 - Conversation summary: ~$0.0003
 - **Daily (10 convos)**: ~$0.004
 
 **When to use**:
+
 - ✅ Testing/development only
 - ✅ Extreme budget constraints
 - ✅ Simple, straightforward names only
@@ -198,26 +214,30 @@ OPENAI_MODEL=gpt-3.5-turbo
 
 ## Recommendation Matrix
 
-### Choose GPT-4o-mini if:
+### Choose GPT-4o-mini if
+
 - ✅ You want the best balance of cost/performance
 - ✅ Handling typical English names
 - ✅ Running in production
 - ✅ Processing high volume
 - ✅ Budget matters
 
-### Choose GPT-4o if:
+### Choose GPT-4o if
+
 - ✅ Need maximum accuracy
 - ✅ Complex or unusual names (e.g., "Siobhan", "Xiuying")
 - ✅ Multilingual conversations
 - ✅ Premium service offering
 - ✅ Cost is secondary to quality
 
-### Choose GPT-4-turbo if:
+### Choose GPT-4-turbo if
+
 - ✅ Need very long context (rare for this use case)
 - ✅ Want better than mini, but cheaper than 4o
 - ✅ Already familiar with this model
 
-### Choose GPT-3.5-turbo if:
+### Choose GPT-3.5-turbo if
+
 - ✅ Testing only
 - ✅ Extremely budget-constrained
 - ⚠️ Accept lower accuracy
@@ -229,17 +249,20 @@ OPENAI_MODEL=gpt-3.5-turbo
 ### Method 1: Environment Variable (Recommended)
 
 1. Edit `.env`:
+
    ```env
    OPENAI_MODEL=gpt-4o
    ```
 
 2. Restart the app:
+
    ```bash
    npm run dev
    ```
 
 3. Check the console:
-   ```
+
+   ```md
    - Name Extraction (OpenAI gpt-4o)
    ```
 
@@ -268,6 +291,7 @@ OPENAI_MODEL=gpt-4o npm run dev
 ```
 
 Compare:
+
 - Response time (check console logs)
 - Accuracy (test with complex names)
 - Cost (check OpenAI dashboard)
@@ -311,6 +335,7 @@ export class NameExtractionService {
 ```
 
 Then in `.env`:
+
 ```env
 OPENAI_EXTRACTION_MODEL=gpt-4o-mini
 OPENAI_SUMMARY_MODEL=gpt-4o
@@ -366,6 +391,7 @@ console.log(`Model: ${OPENAI_MODEL}, Latency: ${latency}ms, Names found: ${names
 ### Cost Tracking
 
 Monitor on OpenAI dashboard:
+
 1. Go to [platform.openai.com/usage](https://platform.openai.com/usage)
 2. Filter by model
 3. Analyze costs per day/month
@@ -373,6 +399,7 @@ Monitor on OpenAI dashboard:
 ### A/B Testing
 
 Run two instances:
+
 - Instance A: gpt-4o-mini
 - Instance B: gpt-4o
 
@@ -384,11 +411,12 @@ Compare accuracy and user satisfaction.
 
 ### Model Not Found Error
 
-```
+```md
 Error: The model `gpt-4o` does not exist
 ```
 
 **Solutions**:
+
 1. Check spelling in `.env`
 2. Verify model is available in your region
 3. Ensure your OpenAI account has access
@@ -397,6 +425,7 @@ Error: The model `gpt-4o` does not exist
 ### Slow Performance
 
 If responses are too slow:
+
 1. Switch to gpt-4o-mini (fastest)
 2. Reduce `max_tokens`
 3. Check internet connection
@@ -405,6 +434,7 @@ If responses are too slow:
 ### High Costs
 
 If costs are too high:
+
 1. Switch to gpt-4o-mini (cheapest effective option)
 2. Increase `PROCESS_INTERVAL` (batch more transcriptions)
 3. Cache repeated names locally
@@ -439,6 +469,7 @@ A: GPT-4o costs about 15-20x more than gpt-4o-mini.
 **For most users**: Stick with **gpt-4o-mini** ⭐
 
 It offers the best balance of:
+
 - ⚡ Speed
 - 💰 Cost
 - 🎯 Accuracy
@@ -464,6 +495,7 @@ OPENAI_MODEL=gpt-4-turbo
 ```
 
 **Need help?** Check the console on startup:
+
 ```
 - Name Extraction (OpenAI gpt-4o-mini)
 ```

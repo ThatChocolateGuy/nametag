@@ -1,6 +1,7 @@
 # Troubleshooting ngrok 404 Errors
 
 ## Issue
+
 Getting 404 errors in ngrok terminal when MentraOS tests the connection URL.
 
 ## Common Causes & Solutions
@@ -20,6 +21,7 @@ Getting 404 errors in ngrok terminal when MentraOS tests the connection URL.
 ```
 
 **Solution**: If not running, start it:
+
 ```bash
 cd smartglasses-memory-app
 npm run dev
@@ -32,17 +34,20 @@ npm run dev
 **Common Mistake**: Including paths or trailing slashes
 
 ❌ Wrong:
+
 ```
 https://matchless-jonell-subarcuate.ngrok-free.dev/
 https://matchless-jonell-subarcuate.ngrok-free.dev/api
 ```
 
 ✅ Correct:
+
 ```
 https://matchless-jonell-subarcuate.ngrok-free.dev
 ```
 
 **Solution**:
+
 1. Go to [console.mentra.glass](https://console.mentra.glass)
 2. Edit your app
 3. Remove the trailing `/` from "Public URL"
@@ -61,6 +66,7 @@ Forwarding   https://matchless-jonell-subarcuate.ngrok-free.dev -> http://localh
 **If it shows different port** (e.g., 8080):
 
 **Solution**: Restart ngrok with correct port:
+
 ```bash
 ngrok http --url=matchless-jonell-subarcuate.ngrok-free.dev 3000
 ```
@@ -72,6 +78,7 @@ ngrok http --url=matchless-jonell-subarcuate.ngrok-free.dev 3000
 **Check**: Package name in `.env` must EXACTLY match MentraOS Console
 
 **In `.env`**:
+
 ```env
 PACKAGE_NAME=com.yourname.memoryapp
 ```
@@ -79,6 +86,7 @@ PACKAGE_NAME=com.yourname.memoryapp
 **In MentraOS Console**: Must be identical!
 
 **Solution**:
+
 1. Check your `.env` file
 2. Check MentraOS Console app settings
 3. Make them match exactly (case-sensitive)
@@ -110,6 +118,7 @@ curl https://matchless-jonell-subarcuate.ngrok-free.dev
 **Issue**: ngrok free tier shows a warning page before forwarding
 
 **What happens**:
+
 - First visit shows "ngrok warning"
 - Need to click "Visit Site"
 - MentraOS test might fail because of this
@@ -117,15 +126,18 @@ curl https://matchless-jonell-subarcuate.ngrok-free.dev
 **Solutions**:
 
 **A) Suppress ngrok warning** (if using auth token):
+
 ```bash
 ngrok http --url=matchless-jonell-subarcuate.ngrok-free.dev 3000 --request-header-remove=ngrok-skip-browser-warning
 ```
 
 **B) Use ngrok pro** ($8/month):
+
 - No warning page
 - More reliable for production
 
 **C) Alternative tunneling**:
+
 - Cloudflare Tunnel (free, no warning)
 - LocalTunnel (free)
 - Tailscale Funnel (free)
@@ -146,6 +158,7 @@ POST /webhook             200 OK
 ```
 
 **If you see**:
+
 ```
 GET /                      404 Not Found
 ```
@@ -197,6 +210,7 @@ npm run dev
 ```
 
 **Expected output**:
+
 ```
 ╔═════════════════════════════════════════╗
 ║   Smart Glasses Memory Assistant v1.0   ║
@@ -212,11 +226,13 @@ Memory Glasses App initialized
 ### Step 2: Verify ngrok is Running
 
 **New terminal**:
+
 ```bash
 ngrok http --url=matchless-jonell-subarcuate.ngrok-free.dev 3000
 ```
 
 **Expected output**:
+
 ```
 Session Status    online
 Forwarding        https://matchless-jonell-subarcuate.ngrok-free.dev -> http://localhost:3000
@@ -262,6 +278,7 @@ curl https://matchless-jonell-subarcuate.ngrok-free.dev
 ### Step 6: Test Connection from MentraOS Console
 
 In MentraOS Console:
+
 1. Click "Test Connection" or save the app
 2. Watch **both terminals**:
    - Terminal 1 (app): Should show incoming connection logs
@@ -270,12 +287,14 @@ In MentraOS Console:
 **What you should see**:
 
 **ngrok terminal**:
+
 ```
 GET /health               200 OK
 POST /webhook             200 OK
 ```
 
 **app terminal**:
+
 ```
 [timestamp] Incoming connection from MentraOS
 ```
@@ -289,6 +308,7 @@ POST /webhook             200 OK
 **Cause**: ngrok not running or wrong URL
 
 **Solution**:
+
 1. Make sure ngrok is running
 2. Check URL is correct
 3. Try accessing in browser first
@@ -300,6 +320,7 @@ POST /webhook             200 OK
 **Cause**: App not running or app not handling routes
 
 **Solution**:
+
 1. Verify app is running (`npm run dev`)
 2. Check app logs for errors
 3. Test `curl http://localhost:3000`
@@ -311,6 +332,7 @@ POST /webhook             200 OK
 **Cause**: App crashed or stopped
 
 **Solution**:
+
 1. Check Terminal 1 for crash logs
 2. Restart app: `npm run dev`
 
@@ -321,6 +343,7 @@ POST /webhook             200 OK
 **Cause**: Firewall or network issue
 
 **Solution**:
+
 1. Check firewall settings
 2. Try different network
 3. Restart ngrok
@@ -334,7 +357,7 @@ Run through this checklist in order:
 - [ ] App is running (`npm run dev` in Terminal 1)
 - [ ] App shows "Server started on port 3000"
 - [ ] ngrok is running (Terminal 2)
-- [ ] ngrok shows "Forwarding ... -> http://localhost:3000"
+- [ ] ngrok shows "Forwarding ... -> <http://localhost:3000>"
 - [ ] MentraOS Console URL has NO trailing slash
 - [ ] Package name in `.env` matches Console exactly
 - [ ] Microphone permission is enabled in Console
@@ -374,6 +397,7 @@ npm list @mentra/sdk
 Should show: `@mentra/sdk@latest`
 
 **If older version**:
+
 ```bash
 npm update @mentra/sdk
 npm run build
@@ -398,6 +422,7 @@ Sometimes ngrok domains get rate-limited or blocked.
 Here's what a working setup looks like:
 
 **Terminal 1 (app)**:
+
 ```
 ╔═════════════════════════════════════════╗
 ║   Smart Glasses Memory Assistant v1.0   ║
@@ -416,6 +441,7 @@ Ready to accept connections from MentraOS!
 ```
 
 **Terminal 2 (ngrok)**:
+
 ```
 ngrok
 
@@ -433,6 +459,7 @@ Connections       ttl     opn     rt1     rt5     p50     p90
 ```
 
 **MentraOS Console**:
+
 - Public URL: `https://matchless-jonell-subarcuate.ngrok-free.dev`
 - Package: `com.yourname.memoryapp`
 - Status: ✅ Connected
@@ -455,6 +482,7 @@ The console test might fail due to ngrok's warning page, but the actual connecti
 ## Need More Help?
 
 If still stuck, provide:
+
 1. Full output from Terminal 1 (app)
 2. Full output from Terminal 2 (ngrok)
 3. Exact URL in MentraOS Console

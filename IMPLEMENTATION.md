@@ -6,40 +6,40 @@ This application uses Even Realities G1 smart glasses to help users remember peo
 
 ## Architecture
 
-```
+```md
 ┌─────────────────────────────────────────────────────────────────┐
-│                  Even Realities G1 Smart Glasses                 │
-│                    (Audio Input + Display)                       │
+│                  Even Realities G1 Smart Glasses                │
+│                    (Audio Input + Display)                      │
 └─────────────────────┬───────────────────────────────────────────┘
                       │ Bluetooth
                       ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│                     MentraOS Mobile App                          │
-│              (Handles audio streaming & connectivity)            │
+│                     MentraOS Mobile App                         │
+│              (Handles audio streaming & connectivity)           │
 └─────────────────────┬───────────────────────────────────────────┘
                       │ WebSocket (wss://)
                       ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│               Cloud App (This Application)                       │
-│  ┌─────────────────────────────────────────────────────────┐   │
+│               Cloud App (This Application)                      │
+│  ┌──────────────────────────────────────────────────────────┐   │
 │  │  index.ts - Main MentraOS App Server                     │   │
 │  │  • Handles session lifecycle                             │   │
 │  │  • Processes real-time transcription                     │   │
 │  │  • Orchestrates services                                 │   │
 │  └──────────┬────────────────────────┬──────────────────────┘   │
-│             │                        │                           │
-│  ┌──────────▼───────────┐  ┌────────▼────────────────┐         │
+│             │                        │                          │
+│  ┌──────────▼────────────┐  ┌────────▼────────────────┐         │
 │  │ NameExtractionService │  │  ConversationManager    │         │
-│  │  (OpenAI GPT-4o-mini)│  │  (Business Logic)       │         │
+│  │  (OpenAI GPT-4o-mini) │  │  (Business Logic)       │         │
 │  │  • Extract names      │  │  • Track speakers       │         │
 │  │  • Summarize context  │  │  • Match people         │         │
 │  │  • Match to people    │  │  • Coordinate storage   │         │
 │  └───────────────────────┘  └──────┬──────────────────┘         │
-│                                     │                            │
-│                          ┌──────────▼──────────┐                │
-│                          │   MemoryClient      │                │
-│                          │  (Storage Layer)    │                │
-│                          └──────────────────────┘                │
+│                                    │                            │
+│                         ┌──────────▼──────────┐                 │
+│                         │   MemoryClient      │                 │
+│                         │  (Storage Layer)    │                 │
+│                         └─────────────────────┘                 │
 └─────────────────────────────────┬───────────────────────────────┘
                                   │ HTTPS REST API
                                   ↓
@@ -56,6 +56,7 @@ This application uses Even Realities G1 smart glasses to help users remember peo
 **Purpose**: Entry point and MentraOS SDK integration
 
 **Key Features**:
+
 - Extends `AppServer` from `@mentra/sdk`
 - Manages session lifecycle (`onSession`, `onDisconnected`)
 - Handles real-time transcription events
@@ -63,6 +64,7 @@ This application uses Even Realities G1 smart glasses to help users remember peo
 - Buffers transcripts for periodic name extraction (every 30 seconds)
 
 **Configuration**:
+
 ```typescript
 - PORT: 3000 (default)
 - PACKAGE_NAME: Unique app identifier
@@ -73,6 +75,7 @@ This application uses Even Realities G1 smart glasses to help users remember peo
 ```
 
 **SSL Bypass**:
+
 ```typescript
 // Top of file - required for home/corporate networks
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -83,6 +86,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 **Purpose**: AI-powered name detection and conversation summarization
 
 **Model**: OpenAI GPT-4o-mini
+
 - Cost: $0.150/1M input tokens, $0.600/1M output tokens
 - ~$0.0003 per name extraction
 - ~$0.001 per conversation summary
@@ -91,13 +95,16 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 **Methods**:
 
 #### `extractNames(transcript: string): Promise<ExtractedName[]>`
+
 Analyzes conversation for introductions like:
+
 - "I'm John"
 - "My name is Sarah"
 - "This is Alex"
 - "Call me Mike"
 
 Returns:
+
 ```typescript
 {
   name: string;           // "John Smith"
@@ -107,7 +114,9 @@ Returns:
 ```
 
 #### `summarizeConversation(transcript: string): Promise<ConversationSummary>`
+
 Generates end-of-session summary:
+
 ```typescript
 {
   mainTopics: string[];   // ["project planning", "vacation"]
@@ -117,9 +126,11 @@ Generates end-of-session summary:
 ```
 
 #### `matchSpeakerToPerson(transcript, knownPeople): Promise<string | null>`
+
 Attempts to identify speaker by analyzing conversation context and topics from previous encounters.
 
 **Prompting Strategy**:
+
 - Returns pure JSON (no markdown)
 - Temperature: 0.3 (focused and deterministic)
 - Handles JSON extraction from markdown code blocks
@@ -130,6 +141,7 @@ Attempts to identify speaker by analyzing conversation context and topics from p
 **Purpose**: Orchestrates name detection, speaker recognition, and memory storage
 
 **State Management**:
+
 ```typescript
 private speakers: Map<string, Person>
 private currentTranscript: string[]
@@ -162,6 +174,7 @@ private currentTranscript: string[]
 **Implementation Attempts**:
 
 #### Attempt 1: REST API (404 errors)
+
 ```typescript
 PUT /{uuid}/memories/{memoryId}
 Body: { content: "..." }
@@ -169,6 +182,7 @@ Body: { content: "..." }
 ```
 
 #### Attempt 2: SSE + JSON-RPC (Timeout)
+
 ```typescript
 // Connect to SSE endpoint
 GET /{uuid}/sse
@@ -186,12 +200,14 @@ Body: {
 ```
 
 **Root Cause**:
+
 - SSE connection via `fetch()` times out consistently
 - NODE_TLS_REJECT_UNAUTHORIZED doesn't affect fetch() SSL handling in Bun
 - Memory MCP requires SSE handshake before JSON-RPC operations
 - REST API only supports GET (list/retrieve) and PUT/DELETE (update/remove existing)
 
 **Verified Working**:
+
 ```bash
 # List memories works
 curl -k GET https://memory.mcpgenerator.com/...
@@ -200,6 +216,7 @@ User: Memory MCP works in Claude Code on the same machine
 ```
 
 **Data Format**:
+
 ```typescript
 interface Person {
   name: string;              // "John Smith"
@@ -215,6 +232,7 @@ interface Person {
 ## Implementation Flow
 
 ### Session Start
+
 1. User launches app on MentraOS mobile
 2. App connects to cloud server via WebSocket
 3. Memory MCP client attempts SSE connection (currently times out)
@@ -222,13 +240,15 @@ interface Person {
 5. Display shows "Memory Assistant Ready!"
 
 ### Real-Time Transcription
+
 1. MentraOS streams audio from glasses microphone
 2. MentraOS transcription service processes speech
 3. App receives `onTranscription` events with `isFinal` flag
 4. Transcripts buffered for 30-second intervals
 
 ### Name Detection (Every 30 seconds)
-```
+
+```md
 User speaks: "Hey, I'm James"
   ↓
 Buffered transcripts sent to OpenAI
@@ -244,6 +264,7 @@ If known: Display "Welcome back James!" + last context
 ```
 
 ### Session End
+
 1. User disconnects from app
 2. `onDisconnected` event fires
 3. ConversationManager.endConversation()
@@ -254,6 +275,7 @@ If known: Display "Welcome back James!" + last context
 ## Current Limitations
 
 ### 1. No True Speaker Diarization
+
 **Issue**: MentraOS transcription doesn't separate speakers
 
 **Current Workaround**: All transcripts labeled as "Speaker A"
@@ -261,15 +283,18 @@ If known: Display "Welcome back James!" + last context
 **Impact**: Can't distinguish who said what in multi-person conversations
 
 **Future Solution**:
+
 - Integrate AssemblyAI for real-time speaker diarization
 - Stream raw audio from glasses microphone
 - Get speaker-labeled transcripts (Speaker A, Speaker B, etc.)
 - Match speakers to known voice profiles
 
 ### 2. Memory MCP SSE Timeout
+
 **Issue**: SSE connection consistently times out
 
 **Attempted Fixes**:
+
 - SSL bypass via NODE_TLS_REJECT_UNAUTHORIZED
 - SSL bypass via axios httpsAgent
 - Native fetch with streaming
@@ -278,14 +303,17 @@ If known: Display "Welcome back James!" + last context
 **Workaround**: File-based storage alternative (see fileStorageClient.ts)
 
 **Next Steps**:
+
 - Investigate MCP SDK package usage
 - Examine Claude Code's MCP client implementation
 - Consider alternative persistence (local database, cloud storage)
 
 ### 3. Batch Name Processing
+
 **Issue**: Names detected every 30 seconds, not instantly
 
 **Reasoning**:
+
 - Cost optimization (fewer API calls)
 - Better context for AI analysis
 - Reduces false positives
@@ -293,9 +321,11 @@ If known: Display "Welcome back James!" + last context
 **Trade-off**: ~30 second delay in name recognition
 
 ### 4. Single Speaker ID in POC
+
 **Issue**: Everyone is "Speaker A" without true diarization
 
 **Impact**:
+
 - Can't match names to specific speakers
 - Multiple people with same name causes confusion
 - Topic attribution is inaccurate
@@ -326,11 +356,13 @@ MEMORY_MCP_URL=https://memory.mcpgenerator.com/.../sse  # Optional
 The `OPENAI_MODEL` environment variable allows easy model swapping:
 
 **Supported Models**:
+
 - `gpt-4o-mini` (default) - Fast, cheap, excellent quality
 - `gpt-4o` - Higher quality, slower, more expensive
 - `gpt-3.5-turbo` - Faster, cheaper, lower quality
 
 **Comparison**:
+
 | Model | Input Cost | Output Cost | Speed | Quality |
 |-------|-----------|-------------|-------|---------|
 | gpt-4o-mini | $0.150/1M | $0.600/1M | ⚡⚡⚡ | ★★★★ |
@@ -349,6 +381,7 @@ See `MODEL_SELECTION.md` for detailed comparison.
    - MentraOS app registration
 
 2. **Setup**:
+
    ```bash
    cd smartglasses-memory-app
    bun install
@@ -357,6 +390,7 @@ See `MODEL_SELECTION.md` for detailed comparison.
    ```
 
 3. **Run**:
+
    ```bash
    # Terminal 1: Start app with hot reload
    bun run dev
@@ -373,6 +407,7 @@ See `MODEL_SELECTION.md` for detailed comparison.
 ### Production Considerations
 
 **DO NOT deploy to production without**:
+
 1. Removing SSL bypass (`NODE_TLS_REJECT_UNAUTHORIZED`)
 2. Adding proper SSL certificate validation
 3. Implementing authentication/authorization
@@ -386,7 +421,9 @@ See `MODEL_SELECTION.md` for detailed comparison.
 ## Testing
 
 ### Name Detection
+
 Test phrases:
+
 - "I'm John"
 - "My name is Sarah"
 - "This is Alex"
@@ -394,12 +431,14 @@ Test phrases:
 - "Hey everyone, I'm Jennifer"
 
 ### Recognition
+
 1. Introduce yourself
 2. Disconnect and reconnect
 3. Introduce again with same name
 4. Should show "Welcome back [Name]!"
 
 ### Conversation Summary
+
 1. Have ~2 minute conversation
 2. Disconnect
 3. Reconnect and check if topics are remembered
@@ -409,12 +448,14 @@ Test phrases:
 ### Measured Performance
 
 **Name Detection**:
+
 - Success Rate: ~95% for explicit introductions
 - False Positive Rate: ~2% (reduces with higher confidence threshold)
 - Detection Latency: 30-35 seconds (batch processing interval)
 
 **Name Detection Results** (from actual session):
-```
+
+```md
 ✓ Detected: James (high confidence) - "Hey, I'm James"
 ✓ Detected: John (high confidence) - "I'm John"
 ✓ Detected: Sarah (high confidence) - "Hey, I'm Sarah"
@@ -425,23 +466,27 @@ Test phrases:
 ```
 
 **Session Stability**:
+
 - WebSocket uptime: 20+ minutes continuous
 - Zero disconnections during test sessions
 - Hot reload works consistently with Bun
 - MentraOS transcription quality: Excellent
 
 **Resource Usage** (Bun runtime):
+
 - Memory: ~50MB baseline
 - CPU: <5% idle, ~15% during transcription processing
 - Startup time: ~1 second (2x faster than Node.js)
 - Hot reload time: ~200ms
 
 **API Costs** (per session):
+
 - Name extraction: $0.003-0.005 per 30-second batch
 - Conversation summary: ~$0.001 per session
 - Total: <$0.01 per 30-minute conversation
 
 ### Network Requirements
+
 - Minimum: 1 Mbps upload (audio streaming)
 - Recommended: 5+ Mbps (for reliable WebSocket)
 - Latency: < 200ms to MentraOS cloud preferred
@@ -449,25 +494,31 @@ Test phrases:
 ## Troubleshooting
 
 ### Memory MCP SSE Timeout
+
 **Symptom**: `DOMException: TimeoutError` on SSE connection
 
 **Cause**: SSL/TLS handshake failure or network blocking SSE
 
 **Solutions**:
+
 1. Use file-based storage alternative (fileStorageClient.ts)
 2. Try different network (mobile hotspot vs wifi)
 3. Check firewall/antivirus settings
 4. Verify Memory MCP URL is correct
 
 ### Names Not Detected
+
 **Check**:
+
 1. OpenAI API key is valid
 2. Console shows "Name detected" messages
 3. Introductions are explicit ("I'm..." not just "John")
 4. Wait 30 seconds for batch processing
 
 ### App Won't Connect to Glasses
+
 **Check**:
+
 1. ngrok is running on correct port (3000)
 2. Package name matches in .env and console
 3. Microphone permission enabled in MentraOS console
@@ -475,7 +526,9 @@ Test phrases:
 5. Glasses are paired with mobile app
 
 ### WebSocket Disconnections
+
 **Check**:
+
 1. Network stability
 2. ngrok connection status
 3. SSL bypass is enabled (NODE_TLS_REJECT_UNAUTHORIZED='0')
@@ -484,12 +537,14 @@ Test phrases:
 ## Future Enhancements
 
 ### Phase 2: True Speaker Diarization
+
 - Capture raw audio from glasses microphone
 - Stream to AssemblyAI for real-time speaker separation
 - Match speakers to stored voice profiles
 - Automatic person identification without names
 
 **Implementation**:
+
 ```typescript
 // Capture audio in index.ts
 session.audio.onAudioData((audioChunk) => {
@@ -511,6 +566,7 @@ async processAudio(chunk: Buffer) {
 **Cost**: $0.02/hour of audio
 
 ### Phase 3: Enhanced Memory
+
 - Voice biometrics for speaker identification
 - Cross-session conversation threading
 - Smart reminders ("Ask John about his vacation")
@@ -519,6 +575,7 @@ async processAudio(chunk: Buffer) {
 - Search historical conversations
 
 ### Phase 4: Advanced Features
+
 - Multi-language support (Spanish, French, Chinese)
 - Emotional tone analysis
 - Action items extraction
@@ -527,7 +584,7 @@ async processAudio(chunk: Buffer) {
 
 ## Code Structure
 
-```
+```md
 smartglasses-memory-app/
 ├── src/
 │   ├── index.ts                      # Main MentraOS app server (253 lines)
@@ -644,6 +701,7 @@ MIT
 ## Credits
 
 Built with:
+
 - [MentraOS](https://mentra.glass) - Smart glasses platform
 - [OpenAI](https://openai.com) - AI name extraction (GPT-4o-mini)
 - [AssemblyAI](https://assemblyai.com) - Speech recognition (future)
@@ -652,6 +710,7 @@ Built with:
 ## Support
 
 For issues or questions:
+
 - MentraOS: [Discord](https://discord.gg/mentra)
 - Documentation: [docs.mentraglass.com](https://docs.mentraglass.com)
 

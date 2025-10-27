@@ -105,6 +105,7 @@ All documentation files created and comprehensive:
 ### 1. Investigated Memory MCP Connection
 
 **Findings**:
+
 - Memory MCP requires SSE connection to get `postEndpointUri`
 - Then uses JSON-RPC for memory operations
 - REST API only supports GET/PUT/DELETE (not POST for creation)
@@ -112,11 +113,13 @@ All documentation files created and comprehensive:
 - User confirmed Memory MCP works in Claude Code on same machine
 
 **Root Cause**:
+
 - Likely: fetch() SSL handling different from Node axios
 - NODE_TLS_REJECT_UNAUTHORIZED doesn't affect fetch()
 - Network may be blocking Server-Sent Events
 
 **Attempts Made**:
+
 1. ✅ SSL bypass via NODE_TLS_REJECT_UNAUTHORIZED
 2. ✅ SSL bypass via axios httpsAgent
 3. ✅ Native fetch with streaming
@@ -127,6 +130,7 @@ All documentation files created and comprehensive:
 ### 2. Created File Storage Alternative
 
 **Implementation**:
+
 - `src/services/fileStorageClient.ts` (280 lines)
 - Same interface as MemoryClient
 - Stores data at `./data/memories.json`
@@ -137,6 +141,7 @@ All documentation files created and comprehensive:
 - Statistics tracking
 
 **Advantages**:
+
 - **Immediate**: Works out of the box
 - **Fast**: < 1ms latency
 - **Reliable**: No network dependencies
@@ -144,6 +149,7 @@ All documentation files created and comprehensive:
 - **Compatible**: Drop-in replacement
 
 **Usage**:
+
 ```typescript
 // In src/index.ts
 import { FileStorageClient as MemoryClient } from './services/fileStorageClient';
@@ -153,6 +159,7 @@ this.memoryClient = new MemoryClient('./data');
 ### 3. Comprehensive Documentation
 
 **IMPLEMENTATION.md Highlights**:
+
 - Complete architecture overview with diagrams
 - Detailed component descriptions
 - API reference for all services
@@ -162,6 +169,7 @@ this.memoryClient = new MemoryClient('./data');
 - Future enhancement roadmap
 
 **STORAGE.md Highlights**:
+
 - Storage backend comparison
 - Migration instructions
 - Security best practices
@@ -185,12 +193,14 @@ this.memoryClient = new MemoryClient('./data');
 ### Storage Performance
 
 **File Storage**:
+
 - Write latency: < 1ms
 - Read latency: < 1ms
 - File size: ~1KB for 10 people
 - Reliability: 100% (no failures)
 
 **Memory MCP**:
+
 - Status: Unable to test (SSE timeout)
 - REST API verified working (GET /memories)
 
@@ -204,6 +214,7 @@ this.memoryClient = new MemoryClient('./data');
 ## 🔄 Current Configuration
 
 **Storage**: File-based (default)
+
 ```typescript
 // src/index.ts line 8
 import { FileStorageClient as MemoryClient } from './services/fileStorageClient';
@@ -213,12 +224,14 @@ this.memoryClient = new MemoryClient('./data');
 ```
 
 **Name Extraction**: OpenAI GPT-4o-mini
+
 ```env
 OPENAI_MODEL=gpt-4o-mini
 OPENAI_API_KEY=sk-proj-...
 ```
 
 **Processing**: 30-second batch intervals
+
 ```typescript
 // src/index.ts line 69
 const PROCESS_INTERVAL = 30000;
@@ -268,11 +281,13 @@ const PROCESS_INTERVAL = 30000;
 
 **Challenge**: SSE connection timeout despite SSL bypass
 **Learning**:
+
 - Server-Sent Events more fragile than WebSockets
 - fetch() SSL handling differs from axios
 - Local file storage often more reliable for POC
 
 **Recommendation**:
+
 - Start with simple local storage
 - Add cloud sync as enhancement
 - Consider alternative protocols (WebSocket, HTTP polling)
@@ -281,12 +296,14 @@ const PROCESS_INTERVAL = 30000;
 
 **Challenge**: Originally designed for Claude, user had OpenAI account
 **Learning**:
+
 - Migration straightforward (similar APIs)
 - GPT-4o-mini more cost-effective ($0.15/1M vs $0.80/1M)
 - max_completion_tokens vs max_tokens gotcha
 - JSON extraction requires markdown handling
 
 **Recommendation**:
+
 - Design for multiple AI providers
 - Make model selection configurable
 - Test with actual API early
@@ -295,12 +312,14 @@ const PROCESS_INTERVAL = 30000;
 
 **Challenge**: User switched from Node to Bun mid-project
 **Learning**:
+
 - Bun hot reload is fantastic for development
 - Mostly compatible with Node packages
 - Some subtle differences (fetch behavior, SSL)
 - 2x performance improvement
 
 **Recommendation**:
+
 - Use Bun for development (hot reload)
 - Test both Bun and Node for production
 - Document runtime requirements clearly
@@ -331,18 +350,21 @@ smartglasses-memory-app/
 ## 🔧 Quick Start
 
 1. **Install dependencies**:
+
    ```bash
    cd smartglasses-memory-app
    bun install  # or npm install
    ```
 
 2. **Configure environment**:
+
    ```bash
    cp .env.example .env
    # Edit .env with your API keys
    ```
 
 3. **Run the app**:
+
    ```bash
    bun run dev  # Terminal 1
    ngrok http --url=your-url.ngrok-free.dev 3000  # Terminal 2
@@ -400,11 +422,13 @@ smartglasses-memory-app/
 ### For Development
 
 **Current Setup**: ✅ Perfect for POC
+
 - File storage is reliable and fast
 - Name detection working excellently
 - Easy to test and debug
 
 **Keep Using**:
+
 - Bun for development (hot reload)
 - File storage for simplicity
 - OpenAI GPT-4o-mini (cost-effective)
@@ -412,6 +436,7 @@ smartglasses-memory-app/
 ### For Production
 
 **Upgrade Path**:
+
 1. Replace file storage with PostgreSQL/MongoDB
 2. Add proper authentication/authorization
 3. Implement rate limiting
@@ -421,6 +446,7 @@ smartglasses-memory-app/
 7. Deploy to cloud (AWS/GCP/Azure)
 
 **Don't Rush Memory MCP**:
+
 - File storage works perfectly
 - Memory MCP can wait until SSE issue resolved
 - Database is better for production anyway
@@ -441,6 +467,7 @@ smartglasses-memory-app/
 **Overall Status**: ✅ **POC COMPLETE & WORKING**
 
 The smart glasses memory assistant is **fully functional** with:
+
 - ✅ Name detection from conversations
 - ✅ Person recognition and context recall
 - ✅ Reliable file-based storage

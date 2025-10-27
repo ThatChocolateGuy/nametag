@@ -9,17 +9,20 @@ This app supports two storage backends for person data:
 Cloud-based persistence using Memory MCP protocol.
 
 **Pros**:
+
 - Centralized storage
 - Accessible from multiple devices
 - Built-in search capabilities
 - No local file management
 
 **Cons**:
+
 - Requires network connectivity
 - SSE connection currently timing out
 - External dependency
 
 **Configuration**:
+
 ```env
 MEMORY_MCP_URL=https://memory.mcpgenerator.com/{uuid}/sse
 ```
@@ -29,6 +32,7 @@ MEMORY_MCP_URL=https://memory.mcpgenerator.com/{uuid}/sse
 Local JSON file storage at `./data/memories.json`
 
 **Pros**:
+
 - Works immediately, no network required
 - Simple and reliable
 - Easy to backup/export
@@ -36,12 +40,14 @@ Local JSON file storage at `./data/memories.json`
 - Fast performance
 
 **Cons**:
+
 - Local only (not synced across devices)
 - Manual backup required
 - Limited to single machine
 
 **Storage Location**:
-```
+
+```md
 smartglasses-memory-app/
 └── data/
     └── memories.json
@@ -61,6 +67,7 @@ STORAGE_BACKEND=file  # or 'mcp'
 Edit `src/index.ts`:
 
 **Use File Storage**:
+
 ```typescript
 // Line 7-8 - Comment out MemoryClient, import FileStorageClient
 // import { MemoryClient } from './services/memoryClient';
@@ -71,6 +78,7 @@ this.memoryClient = new MemoryClient('./data');  // Path to data directory
 ```
 
 **Use Memory MCP**:
+
 ```typescript
 // Line 7-8 - Use MemoryClient
 import { MemoryClient } from './services/memoryClient';
@@ -213,12 +221,14 @@ For production deployments, consider:
 ### Option 1: Database Storage
 
 Replace file storage with a proper database:
+
 - **PostgreSQL** - Robust, ACID compliant
 - **MongoDB** - Flexible schema, good for person data
 - **SQLite** - Simple, serverless, file-based
 - **Supabase** - PostgreSQL with REST API
 
 **Example (PostgreSQL)**:
+
 ```typescript
 import { Pool } from 'pg';
 
@@ -237,6 +247,7 @@ async storePerson(person: Person): Promise<void> {
 ### Option 2: Cloud Storage
 
 Use cloud storage services:
+
 - **AWS S3** - Scalable object storage
 - **Google Cloud Storage** - Similar to S3
 - **Azure Blob Storage** - Microsoft cloud storage
@@ -244,6 +255,7 @@ Use cloud storage services:
 ### Option 3: Hybrid Approach
 
 Use both local and cloud storage:
+
 ```typescript
 class HybridStorage {
   constructor(
@@ -268,6 +280,7 @@ class HybridStorage {
 ### File Storage Security
 
 1. **File Permissions**:
+
    ```bash
    # Restrict access to data directory
    chmod 700 data/
@@ -277,6 +290,7 @@ class HybridStorage {
 2. **Encryption at Rest**:
    - Use file system encryption (BitLocker, FileVault)
    - Or encrypt data before writing:
+
    ```typescript
    import crypto from 'crypto';
 
@@ -287,6 +301,7 @@ class HybridStorage {
    ```
 
 3. **Backup Encryption**:
+
    ```bash
    # Encrypt backup with gpg
    gpg -c data/memories.json
@@ -305,6 +320,7 @@ class HybridStorage {
 ### Memory MCP → File Storage
 
 1. Export from Memory MCP (when SSE works):
+
    ```typescript
    const memories = await mcpClient.getAllMemories();
    const fileClient = new FileStorageClient('./data');
@@ -316,6 +332,7 @@ class HybridStorage {
    ```
 
 2. Verify migration:
+
    ```bash
    cat data/memories.json | jq '.people | length'
    ```
@@ -323,6 +340,7 @@ class HybridStorage {
 ### File Storage → Memory MCP
 
 1. Export file storage:
+
    ```typescript
    const fileClient = new FileStorageClient('./data');
    const people = await fileClient.getAllPeople();
@@ -334,6 +352,7 @@ class HybridStorage {
    ```
 
 2. Verify migration:
+
    ```bash
    curl -k "https://memory.mcpgenerator.com/{uuid}/memories"
    ```
@@ -344,12 +363,14 @@ class HybridStorage {
 
 **Problem**: `ENOENT: no such file or directory`
 **Solution**: Data directory doesn't exist
+
 ```bash
 mkdir -p data
 ```
 
 **Problem**: `EACCES: permission denied`
 **Solution**: Fix permissions
+
 ```bash
 chmod 755 data/
 chmod 644 data/memories.json
@@ -357,6 +378,7 @@ chmod 644 data/memories.json
 
 **Problem**: Corrupted JSON file
 **Solution**: Restore from backup or delete and reinitialize
+
 ```bash
 rm data/memories.json
 # Will be recreated on next app start
@@ -385,21 +407,25 @@ rm data/memories.json
 ## Recommendations
 
 **Development**: Use file storage
+
 - Fast, reliable, easy debugging
 - No network dependencies
 - Simple backup/restore
 
 **Production (Single User)**: Use file storage
+
 - Most reliable option
 - Easy to backup
 - No external dependencies
 
 **Production (Multi-User/Device)**: Use database
+
 - PostgreSQL or MongoDB
 - Proper multi-user support
 - ACID transactions
 
 **Production (Enterprise)**: Use cloud database
+
 - AWS RDS, Google Cloud SQL
 - Automatic backups
 - High availability

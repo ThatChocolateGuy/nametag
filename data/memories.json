@@ -1,16 +1,16 @@
 {
   "people": {
     "person_Speaker A": {
-      "name": "Dave",
+      "name": "Marcia",
       "speakerId": "Speaker A",
-      "lastMet": "2025-10-26T07:56:03.480Z",
-      "lastConversation": "Speaker A talks about clothing choices and preferences, while also confirming a meeting time.",
+      "lastMet": "2025-10-26T19:26:49.988Z",
+      "lastConversation": "The conversation discusses the proximity of the OPP station and an incident involving a friend's careless driving. Speaker A also mentions needing to leave due to stomach discomfort.",
       "lastTopics": [
-        "Clothing Preferences",
-        "Meeting Time"
+        "Location of OPP station",
+        "Carelessness in driving"
       ]
     }
   },
   "version": "1.0.0",
-  "lastModified": "2025-10-26T07:56:03.481Z"
+  "lastModified": "2025-10-26T19:26:49.988Z"
 }
