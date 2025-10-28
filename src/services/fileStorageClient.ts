@@ -172,17 +172,19 @@ export class FileStorageClient {
   }
 
   /**
-   * Retrieve a person by speaker ID
-   * Searches through all people to find one with matching speaker ID
+   * Retrieve a person by speaker ID or name
+   * Searches through all people to find one with matching speaker ID or name
    */
-  async getPerson(speakerId: string): Promise<Person | null> {
+  async getPerson(speakerIdOrName: string): Promise<Person | null> {
     try {
       const storage = this.readStorage();
 
-      // Search through all people for matching speaker ID
+      // Search through all people for matching speaker ID or name
       for (const key in storage.people) {
         const person = storage.people[key];
-        if (person.speakerId === speakerId) {
+        // Match by speaker ID OR by name (case-insensitive)
+        if (person.speakerId === speakerIdOrName || 
+            person.name.toLowerCase() === speakerIdOrName.toLowerCase()) {
           return {
             ...person,
             lastMet: person.lastMet ? new Date(person.lastMet) : undefined

@@ -256,14 +256,20 @@ export class ConversationManager {
       .map(seg => seg.text)
       .join('\n');
 
+    console.log('\n=== Preparing Conversation Summary ===');
+    console.log(`Speaker map before replacement:`, Array.from(this.speakerNames.entries()));
+    console.log(`Transcript preview (before):`, transcript.substring(0, 200));
+
     // Replace each speaker ID with their name
     for (const [speakerId, name] of this.speakerNames.entries()) {
-      // Match "A: " or "B: " at the beginning of lines
+      // Match "A: " or "B: " or "Nem: " at the beginning of lines
       const regex = new RegExp(`^${speakerId}:`, 'gm');
+      const beforeCount = (transcript.match(regex) || []).length;
       transcript = transcript.replace(regex, `${name}:`);
+      console.log(`Replaced "${speakerId}:" with "${name}:" (${beforeCount} occurrences)`);
     }
 
-    console.log('\n=== Generating Conversation Summary ===');
+    console.log(`Transcript preview (after):`, transcript.substring(0, 200));
     console.log(`Transcript length: ${transcript.length} characters`);
     console.log(`People involved: ${Array.from(this.speakerNames.values()).join(', ')}`);
 

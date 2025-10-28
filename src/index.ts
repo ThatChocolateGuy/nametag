@@ -60,7 +60,7 @@ class MemoryGlassesApp extends AppServer {
 
     // Show welcome message
     session.layouts.showTextWall(
-      "Nametag Ready!\nListening...",
+      "Nametag Ready!\n\nListening...",
       {
         view: ViewType.MAIN,
         durationMs: 3000
