@@ -36,7 +36,7 @@ export class NameExtractionService {
         temperature: 0.3,
         messages: [{
           role: 'user',
-          content: `Analyze this conversation transcript and extract all names mentioned when people introduce themselves or others.
+          content: `Analyze this conversation transcript and extract ONLY names from SELF-INTRODUCTIONS.
 
 Transcript:
 ${transcript}
@@ -50,13 +50,15 @@ Return ONLY a JSON array of objects with this format:
   }
 ]
 
-Rules:
-- Only include names from introductions like "I'm X", "My name is X", "This is X", "Call me X"
-- Use "high" confidence for explicit introductions
-- Use "medium" for contextual mentions
-- Use "low" for ambiguous cases
-- If no names found, return empty array []
-- Return ONLY valid JSON, no explanation`
+CRITICAL Rules:
+- ONLY extract names when someone introduces THEMSELVES using first-person: "I'm X", "I am X", "My name is X", "Call me X"
+- DO NOT extract names mentioned in third person: "I met John", "John told me", "This is for Sarah"
+- DO NOT extract names from questions: "Are you John?"
+- Use "high" confidence ONLY for clear first-person self-introductions
+- Use "medium" for uncertain cases
+- Use "low" for very ambiguous cases
+- If no SELF-introductions found, return empty array []
+- Return ONLY valid JSON, no explanation or markdown`
         }]
       });
 

@@ -4,6 +4,7 @@ import path from 'path';
 export interface Person {
   name: string;
   speakerId: string;
+  voiceReference?: string;  // Base64 encoded audio clip (2-10 seconds)
   lastConversation?: string;
   lastTopics?: string[];
   lastMet?: Date;
@@ -103,8 +104,14 @@ export class FileStorageClient {
     try {
       const storage = this.readStorage();
 
-      // Create key from speaker ID
-      const key = `person_${person.speakerId}`;
+      // Create key from person's name (normalized)
+      const key = `person_${person.name.toLowerCase().replace(/\s+/g, '_')}`;
+
+      // Check if person already exists - if so, update their speaker ID mapping
+      const existing = storage.people[key];
+      if (existing && existing.speakerId !== person.speakerId) {
+        console.log(`✓ Updated ${person.name}'s speaker ID: ${existing.speakerId} → ${person.speakerId}`);
+      }
 
       // Store person data
       storage.people[key] = {
@@ -122,20 +129,24 @@ export class FileStorageClient {
 
   /**
    * Retrieve a person by speaker ID
+   * Searches through all people to find one with matching speaker ID
    */
   async getPerson(speakerId: string): Promise<Person | null> {
     try {
       const storage = this.readStorage();
-      const key = `person_${speakerId}`;
-      const person = storage.people[key];
 
-      if (!person) return null;
+      // Search through all people for matching speaker ID
+      for (const key in storage.people) {
+        const person = storage.people[key];
+        if (person.speakerId === speakerId) {
+          return {
+            ...person,
+            lastMet: person.lastMet ? new Date(person.lastMet) : undefined
+          };
+        }
+      }
 
-      // Convert lastMet string back to Date
-      return {
-        ...person,
-        lastMet: person.lastMet ? new Date(person.lastMet) : undefined
-      };
+      return null;
     } catch (error) {
       console.error('Error retrieving person:', error);
       return null;
@@ -185,12 +196,12 @@ export class FileStorageClient {
   }
 
   /**
-   * Delete a person by speaker ID
+   * Delete a person by name
    */
-  async deletePerson(speakerId: string): Promise<boolean> {
+  async deletePerson(name: string): Promise<boolean> {
     try {
       const storage = this.readStorage();
-      const key = `person_${speakerId}`;
+      const key = `person_${name.toLowerCase().replace(/\s+/g, '_')}`;
 
       if (!storage.people[key]) {
         return false;
@@ -199,7 +210,7 @@ export class FileStorageClient {
       delete storage.people[key];
       this.writeStorage(storage);
 
-      console.log(`Deleted person with speaker ID: ${speakerId}`);
+      console.log(`Deleted person: ${name}`);
       return true;
     } catch (error) {
       console.error('Error deleting person:', error);

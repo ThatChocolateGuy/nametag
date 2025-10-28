@@ -1,5 +1,13 @@
-import { MemoryClient, Person } from './memoryClient';
+import { Person } from './memoryClient';
 import { NameExtractionService } from './nameExtractionService';
+import { OpenAITranscriptionService } from './openaiTranscriptionService';
+
+// Storage interface that both MemoryClient and FileStorageClient implement
+export interface IStorageClient {
+  getPerson(id: string): Promise<Person | null>;
+  findPersonByName(name: string): Promise<Person | null>;
+  storePerson(person: Person): Promise<void>;
+}
 
 export interface ConversationBuffer {
   text: string;
@@ -7,8 +15,9 @@ export interface ConversationBuffer {
 }
 
 export class ConversationManager {
-  private memoryClient: MemoryClient;
+  private memoryClient: IStorageClient;
   private nameExtractor: NameExtractionService;
+  private transcriptionService?: OpenAITranscriptionService;
   private conversationBuffer: ConversationBuffer[] = [];
   private readonly bufferMaxSize = 20; // Keep last 20 utterances
   private readonly nameCheckInterval = 10; // Check for names every 10 utterances
@@ -19,11 +28,31 @@ export class ConversationManager {
   private speakerNames = new Map<string, string>(); // speakerId -> name
 
   constructor(
-    memoryClient: MemoryClient,
-    nameExtractor: NameExtractionService
+    memoryClient: IStorageClient,
+    nameExtractor: NameExtractionService,
+    transcriptionService?: OpenAITranscriptionService
   ) {
     this.memoryClient = memoryClient;
     this.nameExtractor = nameExtractor;
+    this.transcriptionService = transcriptionService;
+  }
+
+  /**
+   * Get display name for a speaker ID
+   * Returns actual name if known, otherwise "Unknown Speaker"
+   */
+  getDisplayName(speakerId: string): string {
+    return this.speakerNames.get(speakerId) || 'Unknown Speaker';
+  }
+
+  /**
+   * Get speaker ID for a known name (reverse lookup)
+   */
+  getSpeakerId(name: string): string | undefined {
+    for (const [id, n] of this.speakerNames.entries()) {
+      if (n === name) return id;
+    }
+    return undefined;
   }
 
   /**
@@ -49,9 +78,16 @@ export class ConversationManager {
       this.utteranceCount++;
       this.activeSpeakers.add(speaker);
 
-      // Check for names periodically
-      if (this.utteranceCount % this.nameCheckInterval === 0) {
-        await this.checkForNames();
+      // Check for names if we detect introduction keywords OR every 10 utterances
+      const introKeywords = /\b(i'?m|my name is|i am|call me|this is)\b/i;
+      if (introKeywords.test(text) || this.utteranceCount % this.nameCheckInterval === 0) {
+        if (introKeywords.test(text)) {
+          console.log(`🎯 Detected introduction keywords in: "${text}"`);
+        }
+        const nameResult = await this.checkForNames();
+        if (nameResult) {
+          return nameResult; // Return new person identification
+        }
       }
 
       // Check if speaker is recognized
@@ -77,45 +113,122 @@ export class ConversationManager {
   /**
    * Check conversation buffer for names
    */
-  private async checkForNames(): Promise<void> {
-    if (this.conversationBuffer.length === 0) return;
+  private async checkForNames(): Promise<{ action: string; data?: any } | null> {
+    if (this.conversationBuffer.length === 0) return null;
 
     const transcript = this.conversationBuffer
       .map(seg => seg.text)
       .join('\n');
 
+    console.log(`\n📝 Checking for names in ${this.conversationBuffer.length} utterances:`);
+    console.log(transcript.substring(0, 200) + (transcript.length > 200 ? '...' : ''));
+
     try {
       const names = await this.nameExtractor.extractNames(transcript);
+      console.log(`✓ Name extraction returned ${names.length} names:`, names.map(n => `${n.name} (${n.confidence})`));
 
       for (const extracted of names) {
-        // Try to match the name to a speaker based on context
-        // For simplicity, associate with the most recent speaker
-        const lastSpeaker = Array.from(this.activeSpeakers).pop();
-        if (!lastSpeaker) continue;
+        // Only process high-confidence self-introductions
+        if (extracted.confidence !== 'high') {
+          console.log(`⚠️  Ignoring low/medium confidence name: ${extracted.name} (${extracted.confidence})`);
+          continue;
+        }
 
-        // Check if we already know this person
+        // Find which speaker introduced themselves by parsing the buffer
+        const speakerId = this.findSpeakerForName(extracted.name);
+        if (!speakerId) {
+          console.log(`⚠️  Could not determine speaker for name: ${extracted.name}`);
+          continue;
+        }
+
+        // Check if this speaker already has an identity
+        const currentIdentity = this.speakerNames.get(speakerId);
+        if (currentIdentity) {
+          console.log(`⚠️  Speaker ${speakerId} already identified as "${currentIdentity}", ignoring "${extracted.name}"`);
+          continue;
+        }
+
+        // Check if we already know this person by name
         const existingPerson = await this.memoryClient.findPersonByName(extracted.name);
 
         if (existingPerson) {
-          // Update speaker mapping
-          this.speakerNames.set(lastSpeaker, extracted.name);
-          console.log(`Recognized returning person: ${extracted.name}`);
+          // Known person - update their speaker ID for this session
+          existingPerson.speakerId = speakerId;
+          existingPerson.lastMet = new Date();
+          await this.memoryClient.storePerson(existingPerson);
+          
+          this.speakerNames.set(speakerId, extracted.name);
+          console.log(`✓ Recognized returning person: ${extracted.name} (Speaker ${speakerId})`);
         } else {
-          // New person - create entry
+          // New person - create entry with voice reference
           const newPerson: Person = {
             name: extracted.name,
-            speakerId: lastSpeaker,
+            speakerId: speakerId,
             lastMet: new Date()
           };
 
+          // Extract voice clip if transcription service is available
+          if (this.transcriptionService) {
+            console.log(`🎤 Extracting voice clip for ${extracted.name}...`);
+            const voiceClip = await this.transcriptionService.extractRecentVoiceClip(7000); // 7 seconds
+            
+            if (voiceClip) {
+              newPerson.voiceReference = voiceClip;
+              console.log(`✓ Voice clip extracted for ${extracted.name}`);
+            } else {
+              console.log(`⚠️  Could not extract voice clip for ${extracted.name}`);
+            }
+          }
+
           await this.memoryClient.storePerson(newPerson);
-          this.speakerNames.set(lastSpeaker, extracted.name);
-          console.log(`Stored new person: ${extracted.name}`);
+          this.speakerNames.set(speakerId, extracted.name);
+          console.log(`✓ Stored new person: ${extracted.name} (Speaker ${speakerId})`);
+          
+          return {
+            action: 'new_person_identified',
+            data: {
+              speaker: speakerId,
+              person: newPerson
+            }
+          };
         }
       }
     } catch (error) {
       console.error('Error checking for names:', error);
     }
+    
+    return null; // No new person identified
+  }
+
+  /**
+   * Find which speaker introduced themselves with a given name
+   * Looks for patterns like "A: I'm John" or "B: My name is Sarah"
+   */
+  private findSpeakerForName(name: string): string | null {
+    // Search recent buffer for self-introduction patterns
+    const nameLower = name.toLowerCase();
+    const introPatterns = [
+      /^([A-Z]):\s*(?:i'm|i am|my name is|this is|call me)\s+/i,
+      /^([A-Z]):\s*.*(?:i'm|i am|my name is|this is|call me)\s+/i
+    ];
+
+    for (const segment of this.conversationBuffer.slice(-10)) {
+      const text = segment.text.toLowerCase();
+      
+      // Check if this segment contains the name
+      if (text.includes(nameLower)) {
+        // Extract speaker ID from format "A: text" or "B: text"
+        const match = segment.text.match(/^([A-Z]):/);
+        if (match) {
+          // Verify it's a self-introduction pattern
+          if (introPatterns.some(pattern => pattern.test(segment.text))) {
+            return match[1];
+          }
+        }
+      }
+    }
+
+    return null;
   }
 
   /**

@@ -11,6 +11,7 @@ const axiosInstance = axios.create({
 export interface Person {
   name: string;
   speakerId: string;
+  voiceReference?: string;  // Base64 encoded audio clip (2-10 seconds)
   lastConversation?: string;
   lastTopics?: string[];
   lastMet?: Date;
