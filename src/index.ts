@@ -111,10 +111,9 @@ class MemoryGlassesApp extends AppServer {
           
           let lines: string[] = [];
           
-          // Line 1: Name
-          lines.push(person.name);
+          // Line 1: Name + Time + Conversation Count (all on one line)
+          let headerLine = person.name;
           
-          // Line 2: Last met with conversation count
           let lastMetDate: Date | null = null;
           let conversationCount = 0;
           
@@ -140,10 +139,12 @@ class MemoryGlassesApp extends AppServer {
             else timeStr = `${Math.floor(diffDays / 30)}mo ago`;
             
             const countStr = conversationCount > 1 ? ` • ${conversationCount}x` : '';
-            lines.push(`${timeStr}${countStr}`);
+            headerLine += ` • ${timeStr}${countStr}`;
           }
           
-          // Lines 3+: Context from last conversation
+          lines.push(headerLine);
+          
+          // Lines 2+: Context from last conversation
           if (person.conversationHistory && person.conversationHistory.length > 0) {
             const lastConv = person.conversationHistory[person.conversationHistory.length - 1];
             
