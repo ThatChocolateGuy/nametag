@@ -251,16 +251,24 @@ export class ConversationManager {
       return result;
     }
 
-    const transcript = this.conversationBuffer
+    // Replace speaker IDs (A, B, C) with actual names in transcript
+    let transcript = this.conversationBuffer
       .map(seg => seg.text)
       .join('\n');
+
+    // Replace each speaker ID with their name
+    for (const [speakerId, name] of this.speakerNames.entries()) {
+      // Match "A: " or "B: " at the beginning of lines
+      const regex = new RegExp(`^${speakerId}:`, 'gm');
+      transcript = transcript.replace(regex, `${name}:`);
+    }
 
     console.log('\n=== Generating Conversation Summary ===');
     console.log(`Transcript length: ${transcript.length} characters`);
     console.log(`People involved: ${Array.from(this.speakerNames.values()).join(', ')}`);
 
     try {
-      // Generate summary
+      // Generate summary (now with actual names instead of A/B/C)
       const summary = await this.nameExtractor.summarizeConversation(transcript);
 
       console.log('\n✓ Summary generated:');
