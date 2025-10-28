@@ -276,4 +276,4 @@ Now that OpenAI is integrated:
 
 You're all set with OpenAI GPT-4o-mini integration! 🚀
 
-Enjoy your cost-effective, high-performance smart glasses memory assistant!
+Enjoy your cost-effective, high-performance Nametag app!

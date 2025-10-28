@@ -13,7 +13,7 @@ Getting 404 errors in ngrok terminal when MentraOS tests the connection URL.
 ```bash
 # Terminal 1 should show:
 ╔═════════════════════════════════════════╗
-║   Smart Glasses Memory Assistant v1.0   ║
+║   Nametag v2.0 - G1 Glasses             ║
 ╚═════════════════════════════════════════╝
 
 ✓ Server started on port 3000
@@ -213,7 +213,7 @@ npm run dev
 
 ```
 ╔═════════════════════════════════════════╗
-║   Smart Glasses Memory Assistant v1.0   ║
+║   Nametag v2.0 - G1 Glasses             ║
 ╚═════════════════════════════════════════╝
 
 Memory Glasses App initialized
@@ -425,7 +425,7 @@ Here's what a working setup looks like:
 
 ```
 ╔═════════════════════════════════════════╗
-║   Smart Glasses Memory Assistant v1.0   ║
+║   Nametag v2.0 - G1 Glasses             ║
 ╚═════════════════════════════════════════╝
 
 Memory Glasses App initialized

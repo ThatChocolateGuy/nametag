@@ -1,4 +1,4 @@
-# Using Bun with Smart Glasses Memory Assistant
+# Using Bun with Nametag
 
 This project now uses **Bun** as the recommended runtime (per MentraOS guidelines).
 

@@ -1,4 +1,4 @@
-# Smart Glasses Memory Assistant - Implementation Details
+# Nametag - Implementation Details
 
 ## Overview
 
@@ -237,7 +237,7 @@ interface Person {
 2. App connects to cloud server via WebSocket
 3. Memory MCP client attempts SSE connection (currently times out)
 4. ConversationManager initializes
-5. Display shows "Memory Assistant Ready!"
+5. Display shows "Nametag Ready!"
 
 ### Real-Time Transcription
 
@@ -402,7 +402,7 @@ See `MODEL_SELECTION.md` for detailed comparison.
 4. **Connect Glasses**:
    - Open MentraOS mobile app
    - Launch your registered app
-   - Should see "Memory Assistant Ready!" on glasses
+   - Should see "Nametag Ready!" on glasses
 
 ### Production Considerations
 

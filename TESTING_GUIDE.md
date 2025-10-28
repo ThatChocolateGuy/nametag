@@ -1,6 +1,6 @@
 # Testing Guide
 
-Comprehensive testing scenarios to verify your Smart Glasses Memory Assistant works correctly.
+Comprehensive testing scenarios to verify your Nametag app works correctly.
 
 ## Pre-Test Checklist
 
@@ -11,7 +11,7 @@ Before running tests, ensure:
 - [ ] MentraOS app shows your app as available
 - [ ] Glasses are connected to your phone
 - [ ] App is launched on glasses
-- [ ] You see "Memory Assistant Ready!" on glasses
+- [ ] You see "Nametag Ready!" on glasses
 
 ## Test Suite
 

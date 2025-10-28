@@ -1,4 +1,4 @@
-# Smart Glasses Memory Assistant - Current Status
+# Nametag - Development Status
 
 **Last Updated**: 2025-10-25
 
@@ -373,7 +373,7 @@ smartglasses-memory-app/
 4. **Connect glasses**:
    - Open MentraOS app
    - Launch your registered app
-   - Should see "Memory Assistant Ready!"
+   - Should see "Nametag Ready!"
 
 5. **Test name detection**:
    - Say: "Hey, I'm John"
@@ -466,7 +466,7 @@ smartglasses-memory-app/
 
 **Overall Status**: ✅ **POC COMPLETE & WORKING**
 
-The smart glasses memory assistant is **fully functional** with:
+The Nametag app is **fully functional** with:
 
 - ✅ Name detection from conversations
 - ✅ Person recognition and context recall

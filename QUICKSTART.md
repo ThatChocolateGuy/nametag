@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get your Smart Glasses Memory Assistant running in 5 minutes!
+Get your Nametag app running in 5 minutes!
 
 ## Prerequisites Checklist
 
@@ -100,7 +100,7 @@ Get your Smart Glasses Memory Assistant running in 5 minutes!
 
    ```md
    ╔══════════════════════════════════════════╗
-   ║   Smart Glasses Memory Assistant v1.0    ║
+   ║   Nametag v2.0 - G1 Glasses              ║
    ╚══════════════════════════════════════════╝
 
    ✓ Server started on port 3000
@@ -126,7 +126,7 @@ Get your Smart Glasses Memory Assistant running in 5 minutes!
 2. Make sure your glasses are connected
 3. Find your app in the app list
 4. Tap to launch it
-5. You should see "Memory Assistant Ready!" on your glasses!
+5. You should see "Nametag Ready!" on your glasses!
 
 ## Testing It Out
 
@@ -238,6 +238,6 @@ For typical daily use (10 conversations, 5 minutes each):
 
 ## Success! 🎉
 
-You now have a working smart glasses memory assistant! Every person you meet will be automatically remembered with conversation context.
+You now have a working Nametag app! Every person you meet will be automatically remembered with conversation context.
 
 Try it with friends and see how it helps you never forget a name again!

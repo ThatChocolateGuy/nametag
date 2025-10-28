@@ -1,4 +1,4 @@
-# Smart Glasses Memory Assistant - Project Summary
+# Nametag - Project Summary
 
 ## 🎯 Mission Accomplished!
 
@@ -380,7 +380,7 @@ For heavy users:
 
 1. **Change Display Messages** (index.ts:54, 91, 163)
    ```typescript
-   "Memory Assistant Ready!" → "Your custom message"
+   "Nametag Ready!" → "Your custom message"
    ```
 
 2. **Adjust Processing Speed** (index.ts:64)
@@ -557,7 +557,7 @@ This project leverages excellent open-source and commercial tools:
 
 ## 🎊 Conclusion
 
-You now have a fully functional, well-documented smart glasses memory assistant!
+You now have a fully functional, well-documented Nametag app!
 
 This POC demonstrates:
 - ✅ Feasibility of the concept

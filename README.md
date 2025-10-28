@@ -1,6 +1,6 @@
-# Smart Glasses Memory Assistant
+# Nametag - Remember Names with G1 Smart Glasses
 
-A proof-of-concept app for Even Realities G1 smart glasses that helps you remember people's names and conversation context using audio input only.
+A MentraOS cloud app for Even Realities G1 smart glasses that automatically remembers people's names and conversation context using voice-only interaction.
 
 ## Features
 
@@ -124,7 +124,7 @@ ngrok http --url=<YOUR_NGROK_STATIC_URL> 3000
 1. Open MentraOS app on your phone
 2. Find your app in the app list
 3. Launch it - the app will connect to your glasses
-4. You should see "Memory Assistant Ready!" on the glasses
+4. You should see "Nametag Ready!" on the glasses
 
 ## How It Works
 

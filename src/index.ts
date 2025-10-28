@@ -36,7 +36,7 @@ class MemoryGlassesApp extends AppServer {
     this.transcriptionService = new OpenAITranscriptionService(OPENAI_API_KEY);
 
     console.log('\n╔═════════════════════════════════════════╗');
-    console.log('║   Smart Glasses Memory Assistant v2.0   ║');
+    console.log('║        Nametag v2.0 - G1 Glasses        ║');
     console.log('╚═════════════════════════════════════════╝\n');
     console.log('Services ready:');
     console.log('- File Storage Client (./data/memories.json)');
@@ -60,7 +60,7 @@ class MemoryGlassesApp extends AppServer {
 
     // Show welcome message
     session.layouts.showTextWall(
-      "Memory Assistant Ready!\nListening...",
+      "Nametag Ready!\nListening...",
       {
         view: ViewType.MAIN,
         durationMs: 3000

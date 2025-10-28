@@ -1,4 +1,4 @@
-# Copilot Instructions - Smart Glasses Memory Assistant
+# Copilot Instructions - Nametag
 
 ## Architecture Overview
 
@@ -51,7 +51,7 @@ Use the conversation buffer pattern in `ConversationManager.processTranscription
 ```typescript
 // In onSession() - critical setup:
 this.conversationManager = new ConversationManager(this.memoryClient, this.nameExtractor);
-session.layouts.showTextWall("Memory Assistant Ready!", { view: ViewType.MAIN, durationMs: 3000 });
+session.layouts.showTextWall("Nametag Ready!", { view: ViewType.MAIN, durationMs: 3000 });
 ```
 
 ## Project-Specific Conventions
