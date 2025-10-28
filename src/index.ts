@@ -108,6 +108,35 @@ class MemoryGlassesApp extends AppServer {
           // Build contextual conversation prompts from recent history
           let message = `${person.name}`;
           
+          // Add last met date if available
+          let lastMetDate: Date | null = null;
+          if (person.conversationHistory && person.conversationHistory.length > 0) {
+            lastMetDate = person.conversationHistory[person.conversationHistory.length - 1].date;
+          } else if (person.lastMet) {
+            lastMetDate = person.lastMet;
+          }
+          
+          if (lastMetDate) {
+            const date = new Date(lastMetDate);
+            const now = new Date();
+            const diffTime = Math.abs(now.getTime() - date.getTime());
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) {
+              message += '\n(earlier today)';
+            } else if (diffDays === 1) {
+              message += '\n(yesterday)';
+            } else if (diffDays < 7) {
+              message += `\n(${diffDays} days ago)`;
+            } else if (diffDays < 30) {
+              const weeks = Math.floor(diffDays / 7);
+              message += `\n(${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago)`;
+            } else {
+              const months = Math.floor(diffDays / 30);
+              message += `\n(${months} ${months === 1 ? 'month' : 'months'} ago)`;
+            }
+          }
+          
           // Use conversation history for richer context
           if (person.conversationHistory && person.conversationHistory.length > 0) {
             const lastConv = person.conversationHistory[person.conversationHistory.length - 1];
