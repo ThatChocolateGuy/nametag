@@ -105,15 +105,37 @@ class MemoryGlassesApp extends AppServer {
         if (result.action === 'speaker_recognized' && result.data) {
           const person = result.data.person;
           
-          // Build conversation prompts from last conversation
+          // Build conversation prompts from conversation history
           let message = `${person.name}`;
           
-          if (person.lastTopics && person.lastTopics.length > 0) {
+          // Get topics from most recent conversations (across all history)
+          if (person.conversationHistory && person.conversationHistory.length > 0) {
+            // Collect topics from recent conversations (last 3)
+            const recentTopics = person.conversationHistory
+              .slice(-3)  // Get last 3 conversations
+              .reverse()  // Most recent first
+              .flatMap((conv: any) => conv.topics)
+              .filter((topic: string, index: number, self: string[]) => self.indexOf(topic) === index)  // Remove duplicates
+              .slice(0, 3);  // Take top 3 unique topics
+            
+            if (recentTopics.length > 0) {
+              message += '\n\nRecent topics:';
+              recentTopics.forEach((topic: string) => {
+                message += `\n• ${topic}`;
+              });
+            } else {
+              // Fallback to last conversation summary
+              const lastConv = person.conversationHistory[person.conversationHistory.length - 1];
+              message += `\n\n"${lastConv.transcript.substring(0, 80)}${lastConv.transcript.length > 80 ? '...' : ''}"`;
+            }
+          } else if (person.lastTopics && person.lastTopics.length > 0) {
+            // Backward compatibility - use old lastTopics field
             message += '\n\nLast topics:';
             person.lastTopics.slice(0, 3).forEach((topic: string) => {
               message += `\n• ${topic}`;
             });
           } else if (person.lastConversation) {
+            // Backward compatibility - use old lastConversation field
             message += `\n\n"${person.lastConversation.substring(0, 80)}${person.lastConversation.length > 80 ? '...' : ''}"`;
           } else {
             message += '\n\nFirst conversation!';
@@ -125,7 +147,13 @@ class MemoryGlassesApp extends AppServer {
           });
 
           console.log(`\n✓ Recognized returning person: ${person.name}`);
-          if (person.lastTopics) {
+          if (person.conversationHistory && person.conversationHistory.length > 0) {
+            console.log(`  Total conversations: ${person.conversationHistory.length}`);
+            const lastConv = person.conversationHistory[person.conversationHistory.length - 1];
+            if (lastConv.topics && lastConv.topics.length > 0) {
+              console.log(`  Previous topics: ${lastConv.topics.join(', ')}`);
+            }
+          } else if (person.lastTopics) {
             console.log(`  Previous topics: ${person.lastTopics.join(', ')}`);
           }
         }

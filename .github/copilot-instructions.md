@@ -27,7 +27,6 @@ this.conversationManager = new ConversationManager(this.memoryClient, this.nameE
 ```
 
 ### 3. Feature Flags & Environment Config
-- `ENABLE_DIARIZATION=true` enables AssemblyAI speaker separation
 - `OPENAI_MODEL` swaps models (see `MODEL_SELECTION.md`)
 - **SSL bypass**: `NODE_TLS_REJECT_UNAUTHORIZED='0'` for dev only
 
@@ -73,14 +72,28 @@ Both storage clients must implement:
 
 **Important**: People are keyed by name (not speaker ID) to persist across sessions. Speaker IDs (A, B, C) are session-specific and may change between conversations.
 
-### 3. OpenAI Prompt Structure
+### 3. Conversation History Tracking
+- **ConversationEntry Interface**: Each conversation stored as `{ date: Date, transcript: string, topics: string[], duration?: number }`
+- **Person.conversationHistory**: Required array of all past conversations
+- **Migration**: Automatic conversion from old single-conversation format to history array
+- **Display Logic**: Shows topics from last 3 conversations (deduplicated)
+- **Backward Compatibility**: Deprecated fields (`lastConversation`, `lastTopics`) maintained for compatibility
+
+### 4. OpenAI Prompt Structure
 See `nameExtractionService.ts` - prompts must:
 - Return JSON arrays only, no markdown
 - Include confidence levels: 'high' | 'medium' | 'low' 
 - Handle graceful parsing with fallbacks
 - **CRITICAL**: Only extract SELF-introductions (first-person "I'm X"), never third-person mentions ("I met John")
 
-### 4. Transcription Processing
+### 5. Voice Recognition & Transcription
+- **OpenAI Transcription Service**: Uses `gpt-4o-transcribe-diarize` model for real-time transcription with speaker identification
+- **Voice References**: 7-second audio clips (base64 encoded) stored in `Person.voiceReference` for future voice matching
+- **Audio Clip Extraction**: When new people are identified, extract audio segment containing their introduction
+- **Speaker Mapping**: OpenAI returns speaker IDs (A, B, C) - mapped to actual names via ConversationManager
+- **No AssemblyAI**: Previous diarization service removed, OpenAI handles both transcription and speaker detection
+
+### 6. Transcription Processing
 ```typescript
 // Critical: Only process on isFinal=true
 if (isFinal) {
@@ -88,8 +101,8 @@ if (isFinal) {
 }
 ```
 
-### 5. Speaker Identification System
-- **Speaker IDs**: Internal identifiers are single letters (A, B, C) from AssemblyAI diarization
+### 7. Speaker Identification System
+- **Speaker IDs**: Internal identifiers are single letters (A, B, C) from OpenAI transcription
 - **Display Names**: Use `conversationManager.getDisplayName(speakerId)` to get actual name or "Unknown Speaker"
 - **Never expose raw IDs** in logs/UI - always use display names
 - **Mapping**: `speakerNames` Map in ConversationManager tracks `speakerId → actual name`
@@ -107,14 +120,8 @@ if (isFinal) {
 - Model swapping via env var (see `MODEL_SELECTION.md`)
 - Structured JSON responses required
 - Temperature 0.3 for consistent name extraction
-
-### AssemblyAI (Optional)
-- Real-time transcription via `DiarizationService`
-- Hybrid mode: immediate transcription + async speaker detection
-- Feature-flagged: only initialized if `ENABLE_DIARIZATION=true`
-- Buffer interval: 5 seconds (balances latency with API costs)
-- **Processing delay**: 6-second wait after transcript to allow diarization completion
-- Speaker corrections applied via timestamp matching (±2s window)
+- **Transcription**: `gpt-4o-transcribe-diarize` model handles real-time speech-to-text with speaker diarization
+- **Voice References**: 7-second audio clips stored as base64 for future voice matching (feature in development)
 
 ## Common Development Tasks
 
@@ -135,7 +142,7 @@ Set `OPENAI_MODEL` in `.env` - no code changes needed. Refer to `MODEL_SELECTION
 - Check `this.sessionActive` state
 - Verify `isFinal=true` for actual processing
 - Use file storage for reliable debugging (avoid MCP SSE timeouts)
-- **Speaker Diarization**: Transcripts delayed 6s to wait for 5s buffer processing. Speaker IDs (A, B, C) stored in `speakerAssignments`, mapped to names via `getDisplayName()`. Check console for "Unknown Speaker" vs actual names.
+- **Speaker Diarization**: OpenAI transcription returns speaker IDs (A, B, C). Speaker IDs stored in `speakerAssignments`, mapped to names via `getDisplayName()`. Check console for "Unknown Speaker" vs actual names.
 
 ## File Organization Logic
 

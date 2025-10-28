@@ -8,12 +8,20 @@ const axiosInstance = axios.create({
   })
 });
 
+export interface ConversationEntry {
+  date: Date;
+  transcript: string;
+  topics: string[];
+  duration?: number; // Duration in seconds
+}
+
 export interface Person {
   name: string;
   speakerId: string;
   voiceReference?: string;  // Base64 encoded audio clip (2-10 seconds)
-  lastConversation?: string;
-  lastTopics?: string[];
+  conversationHistory: ConversationEntry[];  // Full history of all conversations
+  lastConversation?: string;  // Deprecated - kept for backward compatibility
+  lastTopics?: string[];      // Deprecated - kept for backward compatibility
   lastMet?: Date;
 }
 
@@ -200,6 +208,8 @@ export class MemoryClient {
       return {
         name: data.name,
         speakerId: data.speakerId,
+        voiceReference: data.voiceReference,
+        conversationHistory: data.conversationHistory || [],
         lastConversation: data.lastConversation,
         lastTopics: data.lastTopics,
         lastMet: new Date(data.lastMet)
@@ -240,6 +250,8 @@ export class MemoryClient {
       return {
         name: data.name,
         speakerId: data.speakerId,
+        voiceReference: data.voiceReference,
+        conversationHistory: data.conversationHistory || [],
         lastConversation: data.lastConversation,
         lastTopics: data.lastTopics,
         lastMet: new Date(data.lastMet)

@@ -1,12 +1,20 @@
 import fs from 'fs';
 import path from 'path';
 
+export interface ConversationEntry {
+  date: Date;
+  transcript: string;
+  topics: string[];
+  duration?: number; // Duration in seconds
+}
+
 export interface Person {
   name: string;
   speakerId: string;
   voiceReference?: string;  // Base64 encoded audio clip (2-10 seconds)
-  lastConversation?: string;
-  lastTopics?: string[];
+  conversationHistory: ConversationEntry[];  // Full history of all conversations
+  lastConversation?: string;  // Deprecated - kept for backward compatibility
+  lastTopics?: string[];      // Deprecated - kept for backward compatibility
   lastMet?: Date;
 }
 
@@ -68,7 +76,42 @@ export class FileStorageClient {
   private readStorage(): StorageData {
     try {
       const data = fs.readFileSync(this.filePath, 'utf-8');
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      
+      // Migration: Add conversationHistory to existing people
+      if (parsed.people) {
+        Object.keys(parsed.people).forEach(key => {
+          const person = parsed.people[key];
+          if (!person.conversationHistory) {
+            // Migrate old format to new format
+            person.conversationHistory = [];
+            
+            // If there's a lastConversation, create one history entry
+            if (person.lastConversation || person.lastTopics) {
+              person.conversationHistory.push({
+                date: person.lastMet || new Date(),
+                transcript: person.lastConversation || '',
+                topics: person.lastTopics || []
+              });
+            }
+          }
+          
+          // Ensure dates are Date objects
+          if (person.lastMet && typeof person.lastMet === 'string') {
+            person.lastMet = new Date(person.lastMet);
+          }
+          
+          // Convert conversation history dates
+          if (person.conversationHistory) {
+            person.conversationHistory = person.conversationHistory.map((conv: any) => ({
+              ...conv,
+              date: conv.date instanceof Date ? conv.date : new Date(conv.date)
+            }));
+          }
+        });
+      }
+      
+      return parsed;
     } catch (error) {
       console.error('Error reading storage:', error);
       // Return empty storage on error

@@ -1,4 +1,4 @@
-import { Person } from './memoryClient';
+import { Person, ConversationEntry } from './memoryClient';
 import { NameExtractionService } from './nameExtractionService';
 import { OpenAITranscriptionService } from './openaiTranscriptionService';
 
@@ -164,6 +164,7 @@ export class ConversationManager {
           const newPerson: Person = {
             name: extracted.name,
             speakerId: speakerId,
+            conversationHistory: [],
             lastMet: new Date()
           };
 
@@ -270,20 +271,32 @@ export class ConversationManager {
       result.summary = summary.summary;
       result.topics = summary.mainTopics;
 
+      // Create conversation entry
+      const conversationEntry = {
+        date: new Date(),
+        transcript: summary.summary,
+        topics: summary.mainTopics,
+        duration: Math.round((Date.now() - this.conversationBuffer[0].timestamp) / 1000)
+      };
+
       // Update all people involved in the conversation
       for (const [speakerId, name] of this.speakerNames.entries()) {
         const person = await this.memoryClient.getPerson(speakerId);
         if (person) {
-          // Update with latest conversation info
+          // Add to conversation history
+          const updatedHistory = [...(person.conversationHistory || []), conversationEntry];
+          
+          // Update with latest conversation info (for backward compatibility)
           await this.memoryClient.storePerson({
             ...person,
+            conversationHistory: updatedHistory,
             lastConversation: summary.summary,
             lastTopics: summary.mainTopics,
             lastMet: new Date()
           });
 
           result.peopleUpdated.push(name);
-          console.log(`✓ Updated ${name} with conversation summary`);
+          console.log(`✓ Updated ${name} with conversation summary (total: ${updatedHistory.length} conversations)`);
         }
       }
 
