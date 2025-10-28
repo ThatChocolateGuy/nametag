@@ -105,15 +105,25 @@ class MemoryGlassesApp extends AppServer {
         if (result.action === 'speaker_recognized' && result.data) {
           const person = result.data.person;
           
-          // Build contextual conversation prompts from recent history
-          let message = `${person.name}`;
+          // G1 display constraints: ~250 chars, 6-8 lines, 25-30 chars/line
+          const MAX_CHARS = 240;
+          const MAX_POINT_LENGTH = 38; // Slightly over line width to allow wrapping
           
-          // Add last met date if available
+          let lines: string[] = [];
+          
+          // Line 1: Name
+          lines.push(person.name);
+          
+          // Line 2: Last met with conversation count
           let lastMetDate: Date | null = null;
+          let conversationCount = 0;
+          
           if (person.conversationHistory && person.conversationHistory.length > 0) {
             lastMetDate = person.conversationHistory[person.conversationHistory.length - 1].date;
+            conversationCount = person.conversationHistory.length;
           } else if (person.lastMet) {
             lastMetDate = person.lastMet;
+            conversationCount = 1;
           }
           
           if (lastMetDate) {
@@ -122,57 +132,79 @@ class MemoryGlassesApp extends AppServer {
             const diffTime = Math.abs(now.getTime() - date.getTime());
             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
             
-            if (diffDays === 0) {
-              message += '\n(earlier today)';
-            } else if (diffDays === 1) {
-              message += '\n(yesterday)';
-            } else if (diffDays < 7) {
-              message += `\n(${diffDays} days ago)`;
-            } else if (diffDays < 30) {
-              const weeks = Math.floor(diffDays / 7);
-              message += `\n(${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago)`;
-            } else {
-              const months = Math.floor(diffDays / 30);
-              message += `\n(${months} ${months === 1 ? 'month' : 'months'} ago)`;
-            }
+            let timeStr = '';
+            if (diffDays === 0) timeStr = 'today';
+            else if (diffDays === 1) timeStr = 'yesterday';
+            else if (diffDays < 7) timeStr = `${diffDays}d ago`;
+            else if (diffDays < 30) timeStr = `${Math.floor(diffDays / 7)}w ago`;
+            else timeStr = `${Math.floor(diffDays / 30)}mo ago`;
+            
+            const countStr = conversationCount > 1 ? ` • ${conversationCount}x` : '';
+            lines.push(`${timeStr}${countStr}`);
           }
           
-          // Use conversation history for richer context
+          // Lines 3+: Context from last conversation
           if (person.conversationHistory && person.conversationHistory.length > 0) {
             const lastConv = person.conversationHistory[person.conversationHistory.length - 1];
             
             // Prioritize key points for quick, actionable context
             if (lastConv.keyPoints && lastConv.keyPoints.length > 0) {
-              message += '\n\nLast time:';
-              lastConv.keyPoints.slice(0, 3).forEach((point: string) => {
-                message += `\n• ${point}`;
-              });
+              // Take up to 3 key points that fit within char limit
+              const points = lastConv.keyPoints
+                .slice(0, 3)
+                .map((point: string) => {
+                  // Truncate long points to fit display
+                  return point.length > MAX_POINT_LENGTH 
+                    ? point.substring(0, MAX_POINT_LENGTH - 1) + '…'
+                    : point;
+                });
+              
+              lines.push(''); // Blank line
+              points.forEach((point: string) => lines.push(`• ${point}`));
+              
             } else if (lastConv.transcript && lastConv.transcript !== 'Error generating summary') {
-              // Fallback to summary if no key points
-              message += `\n\nLast time:\n"${lastConv.transcript}"`;
+              // Fallback to summary - truncate to fit
+              lines.push('');
+              const summary = lastConv.transcript.length > 120 
+                ? lastConv.transcript.substring(0, 119) + '…'
+                : lastConv.transcript;
+              lines.push(summary);
+              
             } else if (lastConv.topics && lastConv.topics.length > 0) {
-              // Fallback to topics if summary unavailable
-              message += '\n\nLast topics:';
-              lastConv.topics.slice(0, 3).forEach((topic: string) => {
-                message += `\n• ${topic}`;
+              // Fallback to topics
+              lines.push('');
+              lastConv.topics.slice(0, 2).forEach((topic: string) => {
+                const topicStr = topic.length > MAX_POINT_LENGTH 
+                  ? topic.substring(0, MAX_POINT_LENGTH - 1) + '…'
+                  : topic;
+                lines.push(`• ${topicStr}`);
               });
-            }
-            
-            // Show conversation count if multiple
-            if (person.conversationHistory.length > 1) {
-              message += `\n\n(${person.conversationHistory.length} conversations)`;
             }
           } else if (person.lastConversation) {
-            // Backward compatibility - use old lastConversation field
-            message += `\n\nLast time:\n"${person.lastConversation.substring(0, 100)}${person.lastConversation.length > 100 ? '...' : ''}"`;
+            // Backward compatibility
+            lines.push('');
+            const summary = person.lastConversation.length > 120 
+              ? person.lastConversation.substring(0, 119) + '…'
+              : person.lastConversation;
+            lines.push(summary);
           } else if (person.lastTopics && person.lastTopics.length > 0) {
-            // Backward compatibility - use old lastTopics field
-            message += '\n\nLast topics:';
-            person.lastTopics.slice(0, 3).forEach((topic: string) => {
-              message += `\n• ${topic}`;
+            // Backward compatibility
+            lines.push('');
+            person.lastTopics.slice(0, 2).forEach((topic: string) => {
+              const topicStr = topic.length > MAX_POINT_LENGTH 
+                ? topic.substring(0, MAX_POINT_LENGTH - 1) + '…'
+                  : topic;
+              lines.push(`• ${topicStr}`);
             });
           } else {
-            message += '\n\nFirst conversation!';
+            lines.push('');
+            lines.push('First conversation!');
+          }
+          
+          // Join lines and ensure within character limit
+          let message = lines.join('\n');
+          if (message.length > MAX_CHARS) {
+            message = message.substring(0, MAX_CHARS - 1) + '…';
           }
 
           session.layouts.showTextWall(message, {
