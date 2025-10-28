@@ -105,38 +105,43 @@ class MemoryGlassesApp extends AppServer {
         if (result.action === 'speaker_recognized' && result.data) {
           const person = result.data.person;
           
-          // Build conversation prompts from conversation history
+          // Build contextual conversation prompts from recent history
           let message = `${person.name}`;
           
-          // Get topics from most recent conversations (across all history)
+          // Use conversation history for richer context
           if (person.conversationHistory && person.conversationHistory.length > 0) {
-            // Collect topics from recent conversations (last 3)
-            const recentTopics = person.conversationHistory
-              .slice(-3)  // Get last 3 conversations
-              .reverse()  // Most recent first
-              .flatMap((conv: any) => conv.topics)
-              .filter((topic: string, index: number, self: string[]) => self.indexOf(topic) === index)  // Remove duplicates
-              .slice(0, 3);  // Take top 3 unique topics
+            const lastConv = person.conversationHistory[person.conversationHistory.length - 1];
             
-            if (recentTopics.length > 0) {
-              message += '\n\nRecent topics:';
-              recentTopics.forEach((topic: string) => {
+            // Prioritize key points for quick, actionable context
+            if (lastConv.keyPoints && lastConv.keyPoints.length > 0) {
+              message += '\n\nLast time:';
+              lastConv.keyPoints.slice(0, 3).forEach((point: string) => {
+                message += `\n• ${point}`;
+              });
+            } else if (lastConv.transcript && lastConv.transcript !== 'Error generating summary') {
+              // Fallback to summary if no key points
+              message += `\n\nLast time:\n"${lastConv.transcript}"`;
+            } else if (lastConv.topics && lastConv.topics.length > 0) {
+              // Fallback to topics if summary unavailable
+              message += '\n\nLast topics:';
+              lastConv.topics.slice(0, 3).forEach((topic: string) => {
                 message += `\n• ${topic}`;
               });
-            } else {
-              // Fallback to last conversation summary
-              const lastConv = person.conversationHistory[person.conversationHistory.length - 1];
-              message += `\n\n"${lastConv.transcript.substring(0, 80)}${lastConv.transcript.length > 80 ? '...' : ''}"`;
             }
+            
+            // Show conversation count if multiple
+            if (person.conversationHistory.length > 1) {
+              message += `\n\n(${person.conversationHistory.length} conversations)`;
+            }
+          } else if (person.lastConversation) {
+            // Backward compatibility - use old lastConversation field
+            message += `\n\nLast time:\n"${person.lastConversation.substring(0, 100)}${person.lastConversation.length > 100 ? '...' : ''}"`;
           } else if (person.lastTopics && person.lastTopics.length > 0) {
             // Backward compatibility - use old lastTopics field
             message += '\n\nLast topics:';
             person.lastTopics.slice(0, 3).forEach((topic: string) => {
               message += `\n• ${topic}`;
             });
-          } else if (person.lastConversation) {
-            // Backward compatibility - use old lastConversation field
-            message += `\n\n"${person.lastConversation.substring(0, 80)}${person.lastConversation.length > 80 ? '...' : ''}"`;
           } else {
             message += '\n\nFirst conversation!';
           }

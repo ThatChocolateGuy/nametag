@@ -12,6 +12,7 @@ export interface ConversationEntry {
   date: Date;
   transcript: string;
   topics: string[];
+  keyPoints?: string[];  // Key points from the conversation for quick context
   duration?: number; // Duration in seconds
 }
 

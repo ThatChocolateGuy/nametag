@@ -271,11 +271,12 @@ export class ConversationManager {
       result.summary = summary.summary;
       result.topics = summary.mainTopics;
 
-      // Create conversation entry
+      // Create conversation entry with key points
       const conversationEntry = {
         date: new Date(),
         transcript: summary.summary,
         topics: summary.mainTopics,
+        keyPoints: summary.keyPoints,
         duration: Math.round((Date.now() - this.conversationBuffer[0].timestamp) / 1000)
       };
 

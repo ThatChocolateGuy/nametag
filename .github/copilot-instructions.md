@@ -73,10 +73,10 @@ Both storage clients must implement:
 **Important**: People are keyed by name (not speaker ID) to persist across sessions. Speaker IDs (A, B, C) are session-specific and may change between conversations.
 
 ### 3. Conversation History Tracking
-- **ConversationEntry Interface**: Each conversation stored as `{ date: Date, transcript: string, topics: string[], duration?: number }`
+- **ConversationEntry Interface**: Each conversation stored as `{ date: Date, transcript: string, topics: string[], keyPoints?: string[], duration?: number }`
 - **Person.conversationHistory**: Required array of all past conversations
 - **Migration**: Automatic conversion from old single-conversation format to history array
-- **Display Logic**: Shows topics from last 3 conversations (deduplicated)
+- **Display Logic**: Shows key points from last conversation (top 3), falls back to summary, then topics
 - **Backward Compatibility**: Deprecated fields (`lastConversation`, `lastTopics`) maintained for compatibility
 
 ### 4. OpenAI Prompt Structure
