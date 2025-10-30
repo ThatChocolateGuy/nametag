@@ -22,6 +22,9 @@ class MemoryGlassesApp extends AppServer {
   private transcriptionService: OpenAITranscriptionService;
   private conversationManager?: ConversationManager;
   private sessionActive = false;
+  private listeningIndicatorInterval?: NodeJS.Timeout;
+  private currentSession?: AppSession;
+  private indicatorRestartTimeout?: NodeJS.Timeout;
 
   constructor() {
     super({
@@ -50,6 +53,7 @@ class MemoryGlassesApp extends AppServer {
     console.log(`User ID: ${userId}`);
 
     this.sessionActive = true;
+    this.currentSession = session;
 
     // Create conversation manager for this session
     this.conversationManager = new ConversationManager(
@@ -66,6 +70,9 @@ class MemoryGlassesApp extends AppServer {
         durationMs: 3000
       }
     );
+
+    // Start listening indicator (battery-efficient, 2-second interval)
+    this.startListeningIndicator(session);
 
     // Get all known people for voice recognition
     const knownPeople = await this.memoryClient.getAllPeople();
@@ -104,6 +111,15 @@ class MemoryGlassesApp extends AppServer {
         // Handle speaker recognition
         if (result.action === 'speaker_recognized' && result.data) {
           const person = result.data.person;
+          
+          // Pause listening indicator while showing person info
+          this.stopListeningIndicator();
+          
+          // Cancel any pending indicator restart
+          if (this.indicatorRestartTimeout) {
+            clearTimeout(this.indicatorRestartTimeout);
+            this.indicatorRestartTimeout = undefined;
+          }
           
           // G1 display constraints: ~250 chars, 6-8 lines, 25-30 chars/line
           const MAX_CHARS = 240;
@@ -223,11 +239,29 @@ class MemoryGlassesApp extends AppServer {
           } else if (person.lastTopics) {
             console.log(`  Previous topics: ${person.lastTopics.join(', ')}`);
           }
+
+          // Resume listening indicator after showing person info
+          this.indicatorRestartTimeout = setTimeout(() => {
+            if (this.sessionActive && this.currentSession) {
+              this.startListeningIndicator(this.currentSession);
+            }
+            this.indicatorRestartTimeout = undefined;
+          }, 8500);
         }
 
         // Handle new person identified
         if (result.action === 'new_person_identified' && result.data) {
           const person = result.data.person;
+          
+          // Pause listening indicator
+          this.stopListeningIndicator();
+          
+          // Cancel any pending indicator restart
+          if (this.indicatorRestartTimeout) {
+            clearTimeout(this.indicatorRestartTimeout);
+            this.indicatorRestartTimeout = undefined;
+          }
+          
           const message = `Nice to meet you,\n${person.name}!`;
 
           session.layouts.showTextWall(message, {
@@ -242,6 +276,14 @@ class MemoryGlassesApp extends AppServer {
             const updatedPeople = await this.memoryClient.getAllPeople();
             this.transcriptionService.updateKnownPeople(updatedPeople);
           }
+
+          // Resume listening indicator
+          this.indicatorRestartTimeout = setTimeout(() => {
+            if (this.sessionActive && this.currentSession) {
+              this.startListeningIndicator(this.currentSession);
+            }
+            this.indicatorRestartTimeout = undefined;
+          }, 3500);
         }
       }
     );
@@ -263,43 +305,92 @@ class MemoryGlassesApp extends AppServer {
       console.log('\n=== Session Disconnected ===');
       console.log('Reason:', reason);
       this.sessionActive = false;
+      this.stopListeningIndicator();
+      
+      // Cancel any pending indicator restart
+      if (this.indicatorRestartTimeout) {
+        clearTimeout(this.indicatorRestartTimeout);
+        this.indicatorRestartTimeout = undefined;
+      }
 
       // Stop transcription service
-      await this.transcriptionService.stop();
-      console.log('✓ Transcription service stopped');
+      try {
+        await this.transcriptionService.stop();
+        console.log('✓ Transcription service stopped');
+      } catch (error) {
+        console.error('Error stopping transcription service:', error);
+      }
 
       // Save conversation summary
       if (this.conversationManager) {
-        const summaryResult = await this.conversationManager.endConversation();
+        try {
+          const summaryResult = await this.conversationManager.endConversation();
 
-        if (summaryResult.peopleUpdated.length > 0) {
-          console.log(`\n✓ Conversation saved for: ${summaryResult.peopleUpdated.join(', ')}`);
-          
-          if (summaryResult.topics && summaryResult.topics.length > 0) {
-            console.log(`  Topics discussed: ${summaryResult.topics.join(', ')}`);
-          }
-
-          // Show farewell message
-          const farewell = summaryResult.peopleUpdated.length === 1
-            ? `Goodbye ${summaryResult.peopleUpdated[0]}!`
-            : `Goodbye everyone!`;
-
-          const topicsText = summaryResult.topics && summaryResult.topics.length > 0
-            ? `\nTopics: ${summaryResult.topics.slice(0, 3).join(', ')}`
-            : '';
-
-          session.layouts.showTextWall(
-            `${farewell}\n\nConversation saved!${topicsText}`,
-            {
-              view: ViewType.MAIN,
-              durationMs: 3000
+          if (summaryResult.peopleUpdated.length > 0) {
+            console.log(`\n✓ Conversation saved for: ${summaryResult.peopleUpdated.join(', ')}`);
+            
+            if (summaryResult.topics && summaryResult.topics.length > 0) {
+              console.log(`  Topics discussed: ${summaryResult.topics.join(', ')}`);
             }
-          );
+          }
+        } catch (error) {
+          console.error('Error saving conversation summary:', error);
         }
       }
 
       this.conversationManager = undefined;
+      this.currentSession = undefined;
+      console.log('✓ Session cleanup completed');
     });
+  }
+
+  /**
+   * Start battery-efficient listening indicator
+   * Updates every 2 seconds with a simple animation
+   */
+  private startListeningIndicator(session: AppSession): void {
+    let frame = 0;
+    let intervalMs = 1000;
+    const frames = ['●○○','○●○','○○●']; // Simple ASCII animation
+    
+    this.listeningIndicatorInterval = setInterval(() => {
+      if (!this.sessionActive || !this.currentSession) {
+        this.stopListeningIndicator();
+        return;
+      }
+
+      try {
+        const indicator = frames[frame % frames.length];
+        // Center the indicator on the display
+        const text = `\n\n\n     ${indicator}`;
+        
+        session.layouts.showTextWall(
+          text,
+          {
+            view: ViewType.MAIN,
+            durationMs: intervalMs + 500 // Slightly longer than interval to prevent flicker
+          }
+        );
+
+        frame++;
+      } catch (error) {
+        console.error('Error updating listening indicator:', error);
+        this.stopListeningIndicator();
+      }
+    }, intervalMs); // Update every 2 seconds (battery-efficient)
+
+    console.log('✓ Listening indicator started (2s refresh rate)');
+  }
+
+  /**
+   * Stop the listening indicator
+   */
+  private stopListeningIndicator(): void {
+    if (this.listeningIndicatorInterval) {
+      clearInterval(this.listeningIndicatorInterval);
+      this.listeningIndicatorInterval = undefined;
+      console.log('✓ Listening indicator stopped');
+    }
   }
 }
 
@@ -311,8 +402,4 @@ class MemoryGlassesApp extends AppServer {
   console.log(`\n✓ Server started on port ${PORT}`);
   console.log(`✓ Package: ${PACKAGE_NAME}\n`);
   console.log('Ready to accept connections from MentraOS!');
-  console.log('Make sure to:');
-  console.log('1. Run ngrok to expose this server');
-  console.log('2. Register the app in MentraOS Console');
-  console.log('3. Add microphone permission in the console\n');
 })();
