@@ -1,6 +1,7 @@
 {
-  "name": "smartglasses-memory-app",
-  "version": "1.0.0",
+  "name": "nametag",
+  "version": "2.0.0",
+  "description": "Voice biometric recognition app for Even Realities G1 smart glasses - remember everyone you meet",
   "main": "dist/index.js",
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target node",
@@ -8,9 +9,20 @@
     "dev": "bun --hot src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "ThatChocolateGuy",
   "license": "MIT",
-  "description": "Smart glasses app for remembering names and conversations",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ThatChocolateGuy/nametag.git"
+  },
+  "keywords": [
+    "smart-glasses",
+    "g1",
+    "even-realities",
+    "mentraos",
+    "voice-recognition",
+    "conversation-memory"
+  ],
   "dependencies": {
     "@mentra/sdk": "latest",
     "axios": "^1.7.9",
