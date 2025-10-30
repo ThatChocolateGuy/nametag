@@ -225,7 +225,7 @@ MIT License - see [LICENSE](./LICENSE) file
 
 ## Acknowledgments
 
-- **MentraOS Team** for the excellent SDK and G1 hardware
+- **MentraOS Team** for the excellent SDK
 - **OpenAI** for powerful voice recognition and language models
 - **Even Realities** for the incredible G1 smart glasses
 
