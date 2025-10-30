@@ -1,4 +1,4 @@
-# Nametag - Remember Everyone with G1 Smart Glasses# Nametag - Remember Everyone with G1 Smart Glasses
+# Nametag - Remember Everyone with G1 Smart Glasses# Nametag - Remember Everyone with G1 Smart Glasses# Nametag - Remember Everyone with G1 Smart Glasses
 
 
 
@@ -6,35 +6,35 @@ A MentraOS cloud app for Even Realities G1 smart glasses that automatically reco
 
 
 
-## ✨ FeaturesA MentraOS cloud app for Even Realities G1 smart glasses that automatically recognizes people by voice and displays contextual conversation history—all through audio-only interaction.
+## FeaturesA MentraOS cloud app for Even Realities G1 smart glasses that automatically recognizes people by voice and displays contextual conversation history—all through audio-only interaction.
 
 
 
-### 🎤 Voice Biometric Recognition
+### Voice Biometric Recognition
 
-- **Real-time speaker identification** using OpenAI's voice recognition
+- Real-time speaker identification using OpenAI's voice recognition
 
-- Automatically detects and remembers people by their voice## ✨ Features## Features
+- Automatically detects and remembers people by their voice## ✨ FeaturesA MentraOS cloud app for Even Realities G1 smart glasses that automatically recognizes people by voice and displays contextual conversation history—all through audio-only interaction.
 
 - No manual tagging or camera required—audio only
 
 
 
-### 💬 Conversation Intelligence
+### Conversation Intelligence
 
-- **Contextual key points** from past conversations displayed instantly### 🎤 Voice Biometric Recognition- **Real-time Name Recognition**: Automatically detects when people introduce themselves
+- Contextual key points from past conversations displayed instantly### 🎤 Voice Biometric Recognition
 
 - Multi-conversation history tracking with timestamps
 
-- Automatic conversation summarization and topic extraction- **Real-time speaker identification** using OpenAI's voice recognition- **Conversation Memory**: Stores conversation summaries and topics
+- Automatic conversation summarization and topic extraction- **Real-time speaker identification** using OpenAI's voice recognition
 
 - Smart speaker ID replacement (names, not "Speaker A/B")
 
-- Automatically detects and remembers people by their voice- **Person Recognition**: Remembers people you've met before and shows their context
+- Automatically detects and remembers people by their voice## ✨ Features## Features
 
-### 👋 Smart Introductions
+### Smart Introductions
 
-- Detects self-introductions ("I'm John", "My name is Sarah")- No manual tagging or camera required—audio only- **Audio-Only Interface**: Works entirely through voice with visual feedback on glasses
+- Detects self-introductions ("I'm John", "My name is Sarah")- No manual tagging or camera required—audio only
 
 - Creates voice profiles automatically for future recognition
 
@@ -42,167 +42,373 @@ A MentraOS cloud app for Even Realities G1 smart glasses that automatically reco
 
 
 
-### 🔋 Battery-Efficient UI### 💬 Conversation Intelligence## Architecture
+### Battery-Efficient UI### 💬 Conversation Intelligence
 
 - Minimal listening indicator (2-second refresh rate)
 
-- Optimized for G1 display constraints (240 chars, 6-8 lines)- **Contextual key points** from past conversations displayed instantly
+- Optimized for G1 display constraints (240 chars, 6-8 lines)- **Contextual key points** from past conversations displayed instantly### 🎤 Voice Biometric Recognition- **Real-time Name Recognition**: Automatically detects when people introduce themselves
 
 - Smart pause/resume when showing person information
 
-- Multi-conversation history tracking with timestamps```
+- Multi-conversation history tracking with timestamps
 
-## 🏗️ Architecture
+## Architecture
 
-- Automatic conversation summarization and topic extractionSmart Glasses → MentraOS → Cloud App → OpenAI GPT-4o-mini (Name Extraction)
+- Automatic conversation summarization and topic extraction- **Real-time speaker identification** using OpenAI's voice recognition- **Conversation Memory**: Stores conversation summaries and topics
 
 ```
 
-G1 Glasses Audio → MentraOS → Cloud App (this) → OpenAI GPT-4o- Smart speaker ID replacement (names, not "Speaker A/B")                                     → Memory MCP (Storage)
+G1 Glasses Audio → MentraOS → Cloud App → OpenAI GPT-4o → Local File Storage- Smart speaker ID replacement (names, not "Speaker A/B")
 
-                                                → Local File Storage
+```
 
-```                                     → AssemblyAI (Future: Speaker Diarization)
+- Automatically detects and remembers people by their voice- **Person Recognition**: Remembers people you've met before and shows their context
+
+**Key Flow:**
+
+1. Audio streamed from G1 microphone### 👋 Smart Introductions
+
+2. OpenAI transcribes and identifies speakers by voice
+
+3. Names extracted from self-introductions- Detects self-introductions ("I'm John", "My name is Sarah")- No manual tagging or camera required—audio only- **Audio-Only Interface**: Works entirely through voice with visual feedback on glasses
+
+4. Conversation history retrieved and displayed
+
+5. Context saved with key points for next meeting- Creates voice profiles automatically for future recognition
 
 
 
-**Key Flow:**### 👋 Smart Introductions```
+## Tech Stack- Shows personalized greetings with last met time and conversation count
 
-1. Audio streamed from G1 microphone
 
-2. OpenAI transcribes + identifies speakers by voice- Detects self-introductions ("I'm John", "My name is Sarah")
-
-3. Names extracted from self-introductions
-
-4. Conversation history retrieved and displayed- Creates voice profiles automatically for future recognition## Tech Stack
-
-5. Context saved with key points for next meeting
-
-- Shows personalized greetings with last met time and conversation count
-
-## 🛠️ Tech Stack
-
-- **Runtime**: Node.js 18+ with TypeScript
 
 - **Runtime**: Bun (TypeScript)
 
-- **Framework**: MentraOS SDK### 🔋 Battery-Efficient UI- **Framework**: MentraOS SDK
+- **Framework**: MentraOS SDK
 
-- **AI Models**: 
+- **AI Models**: ### 🔋 Battery-Efficient UI### 💬 Conversation Intelligence## Architecture
 
-  - OpenAI `gpt-4o-mini` (name extraction, summarization)- Minimal listening indicator (2-second refresh rate)- **Name Extraction & Summarization**: OpenAI GPT-4o-mini
+  - OpenAI `gpt-4o-mini` (name extraction, summarization)
 
-  - OpenAI `gpt-4o-transcribe-diarize` (voice recognition)
+  - OpenAI `gpt-4o-transcribe-diarize` (voice recognition)- Minimal listening indicator (2-second refresh rate)
 
-- **Storage**: Local JSON file storage (`./data/memories.json`)- Optimized for G1 display constraints (240 chars, 6-8 lines)- **Memory Storage**: Memory MCP Server
+- **Storage**: Local JSON file storage (`./data/memories.json`)
 
-- **Development**: ngrok for local tunneling
-
-- Smart pause/resume when showing person information- **Future Enhancement**: AssemblyAI for speaker diarization
-
-## 📋 Prerequisites
+- **Development**: ngrok for local tunneling- Optimized for G1 display constraints (240 chars, 6-8 lines)- **Contextual key points** from past conversations displayed instantly
 
 
 
-### Hardware
-
-- Even Realities G1 smart glasses## 🏗️ Architecture## Prerequisites
-
-- MentraOS mobile app
+## Prerequisites- Smart pause/resume when showing person information
 
 
 
-### Software
+### Hardware- Multi-conversation history tracking with timestamps```
 
-- [Bun](https://bun.sh) (recommended) or Node.js 18+```1. **Hardware**:
+- Even Realities G1 smart glasses
 
-- [ngrok](https://ngrok.com) account with static domain
+- MentraOS mobile app## 🏗️ Architecture
 
-G1 Glasses Audio → MentraOS → Cloud App (this) → OpenAI GPT-4o   - Even Realities G1 smart glasses (or compatible MentraOS device)
 
-### API Keys
 
-- **MentraOS API Key**: [console.mentra.glass](https://console.mentra.glass)                                                → Local File Storage   - MentraOS mobile app installed
+### Software- Automatic conversation summarization and topic extractionSmart Glasses → MentraOS → Cloud App → OpenAI GPT-4o-mini (Name Extraction)
 
-- **OpenAI API Key**: [platform.openai.com](https://platform.openai.com)
+- [Bun](https://bun.sh) (recommended) or Node.js 18+
 
-```
+- [ngrok](https://ngrok.com) account with static domain```
 
-## 🚀 Quick Start
 
-2. **Software**:
+
+### API KeysG1 Glasses Audio → MentraOS → Cloud App (this) → OpenAI GPT-4o- Smart speaker ID replacement (names, not "Speaker A/B")                                     → Memory MCP (Storage)
+
+- **MentraOS API Key**: [console.mentra.glass](https://console.mentra.glass)
+
+- **OpenAI API Key**: [platform.openai.com](https://platform.openai.com)                                                → Local File Storage
+
+
+
+## Quick Start```                                     → AssemblyAI (Future: Speaker Diarization)
+
+
 
 ### 1. Clone and Install
 
-**Key Flow:**   - Node.js 18 or higher
 
-```bash
+
+```bash**Key Flow:**### 👋 Smart Introductions```
+
+git clone https://github.com/ThatChocolateGuy/nametag.git
+
+cd nametag1. Audio streamed from G1 microphone
+
+bun install
+
+```2. OpenAI transcribes + identifies speakers by voice- Detects self-introductions ("I'm John", "My name is Sarah")
+
+
+
+### 2. Configure Environment3. Names extracted from self-introductions
+
+
+
+Copy `.env.example` to `.env` and add your keys:4. Conversation history retrieved and displayed- Creates voice profiles automatically for future recognition## Tech Stack
+
+
+
+```env5. Context saved with key points for next meeting
+
+PACKAGE_NAME=nem.codes.nametag
+
+MENTRAOS_API_KEY=your_mentraos_api_key- Shows personalized greetings with last met time and conversation count
+
+OPENAI_API_KEY=your_openai_api_key
+
+OPENAI_MODEL=gpt-4o-mini## 🛠️ Tech Stack
+
+PORT=3000
+
+```- **Runtime**: Node.js 18+ with TypeScript
+
+
+
+### 3. Start the App- **Runtime**: Bun (TypeScript)
+
+
+
+```bash- **Framework**: MentraOS SDK### 🔋 Battery-Efficient UI- **Framework**: MentraOS SDK
+
+bun run dev
+
+```- **AI Models**: 
+
+
+
+### 4. Expose with ngrok  - OpenAI `gpt-4o-mini` (name extraction, summarization)- Minimal listening indicator (2-second refresh rate)- **Name Extraction & Summarization**: OpenAI GPT-4o-mini
+
+
+
+In a separate terminal:  - OpenAI `gpt-4o-transcribe-diarize` (voice recognition)
+
+
+
+```bash- **Storage**: Local JSON file storage (`./data/memories.json`)- Optimized for G1 display constraints (240 chars, 6-8 lines)- **Memory Storage**: Memory MCP Server
+
+ngrok http --domain=your-static-domain.ngrok-free.app 3000
+
+```- **Development**: ngrok for local tunneling
+
+
+
+### 5. Register in MentraOS Console- Smart pause/resume when showing person information- **Future Enhancement**: AssemblyAI for speaker diarization
+
+
+
+1. Go to [console.mentra.glass](https://console.mentra.glass)## 📋 Prerequisites
+
+2. Create a new app with your package name
+
+3. Set Public URL to your ngrok domain (no trailing slash)
+
+4. Add **Microphone** permission
+
+5. Save and install on your G1 glasses### Hardware
+
+
+
+## Using Nametag- Even Realities G1 smart glasses## 🏗️ Architecture## Prerequisites
+
+
+
+1. **Start the app** on your glasses- MentraOS mobile app
+
+2. You'll see a **listening indicator**: `[=  ]` animating
+
+3. **When someone speaks**:
+
+   - If they introduce themselves → Name saved with voice profile
+
+   - If voice recognized → Shows name + last met + conversation context### Software
+
+   - If unknown → Speaker tracked as "A", "B", etc. until introduction
+
+- [Bun](https://bun.sh) (recommended) or Node.js 18+```1. **Hardware**:
+
+4. **Key Points Display Example**:
+
+   ```- [ngrok](https://ngrok.com) account with static domain
+
+   John • 3d ago • 5x
+
+   G1 Glasses Audio → MentraOS → Cloud App (this) → OpenAI GPT-4o   - Even Realities G1 smart glasses (or compatible MentraOS device)
+
+   • Needs report by Friday
+
+   • Budget approval pending### API Keys
+
+   • Team meeting scheduled
+
+   ```- **MentraOS API Key**: [console.mentra.glass](https://console.mentra.glass)                                                → Local File Storage   - MentraOS mobile app installed
+
+
+
+5. **End conversation** by closing the app- **OpenAI API Key**: [platform.openai.com](https://platform.openai.com)
+
+   - Summary automatically saved
+
+   - Key points extracted for next meeting```
+
+
+
+## Documentation## 🚀 Quick Start
+
+
+
+All detailed documentation is in the [`/docs`](./docs) folder:2. **Software**:
+
+
+
+- [QUICKSTART.md](./docs/QUICKSTART.md) - Step-by-step setup guide### 1. Clone and Install
+
+- [IMPLEMENTATION.md](./docs/IMPLEMENTATION.md) - Technical architecture details
+
+- [TESTING_GUIDE.md](./docs/TESTING_GUIDE.md) - How to test the app**Key Flow:**   - Node.js 18 or higher
+
+- [MODEL_SELECTION.md](./docs/MODEL_SELECTION.md) - OpenAI model configuration
+
+- [STORAGE.md](./docs/STORAGE.md) - Data storage structure```bash
+
+- [TROUBLESHOOTING_NGROK.md](./docs/TROUBLESHOOTING_NGROK.md) - Common ngrok issues
 
 git clone https://github.com/ThatChocolateGuy/nametag.git1. Audio streamed from G1 microphone   - npm or bun
 
+## Development
+
 cd nametag
+
+### File Structure
 
 bun install2. OpenAI transcribes + identifies speakers by voice   - ngrok account (for local development)
 
 ```
 
-3. Names extracted from self-introductions
+nametag/```
 
-### 2. Configure Environment
+├── src/
 
-4. Conversation history retrieved and displayed3. **API Keys**:
+│   ├── index.ts                      # Main app server3. Names extracted from self-introductions
 
-Copy `.env.example` to `.env`:
+│   └── services/
 
-5. Context saved with key points for next meeting   - MentraOS API key (from [console.mentra.glass](https://console.mentra.glass))
+│       ├── conversationManager.ts    # Conversation orchestration### 2. Configure Environment
 
-```bash
+│       ├── nameExtractionService.ts  # OpenAI name extraction
+
+│       ├── openaiTranscriptionService.ts  # Voice recognition4. Conversation history retrieved and displayed3. **API Keys**:
+
+│       ├── fileStorageClient.ts      # Local storage
+
+│       └── memoryClient.ts           # Legacy MCP interfaceCopy `.env.example` to `.env`:
+
+├── data/
+
+│   └── memories.json                 # Person database5. Context saved with key points for next meeting   - MentraOS API key (from [console.mentra.glass](https://console.mentra.glass))
+
+├── docs/                             # Documentation
+
+└── temp/                             # Temp audio files```bash
+
+```
 
 PACKAGE_NAME=nem.codes.nametag   - OpenAI API key (from [platform.openai.com](https://platform.openai.com))
 
+### Key Design Patterns
+
 MENTRAOS_API_KEY=your_mentraos_api_key
 
-OPENAI_API_KEY=your_openai_api_key## 🛠️ Tech Stack   - AssemblyAI API key (from [assemblyai.com](https://assemblyai.com)) - Optional for POC
+- **Dual Storage Strategy**: Uses local file storage (primary) with MCP server interface (legacy) for easy swapping
 
-OPENAI_MODEL=gpt-4o-mini
+- **Service Dependency Injection**: ConversationManager orchestrates all services (storage, AI, transcription) with clean interfacesOPENAI_API_KEY=your_openai_api_key## 🛠️ Tech Stack   - AssemblyAI API key (from [assemblyai.com](https://assemblyai.com)) - Optional for POC
 
-PORT=3000   - Memory MCP Server URL (provided)
+- **Voice Reference Storage**: 7-second audio clips stored as base64 for future voice matching by OpenAI
 
-```
+- **Speaker Identity Protection**: Once a speaker is identified in a session, that mapping persists to prevent misidentificationOPENAI_MODEL=gpt-4o-mini
 
-- **Runtime**: Bun (TypeScript)
+
+
+## Cost EstimatePORT=3000   - Memory MCP Server URL (provided)
+
+
+
+With OpenAI `gpt-4o-mini` (default):```
+
+- **Name extraction**: ~$0.0001 per request
+
+- **Conversation summary**: ~$0.001 per conversation- **Runtime**: Bun (TypeScript)
+
+- **Voice transcription**: ~$0.002 per minute of audio
 
 ### 3. Start the App
 
-- **Framework**: MentraOS SDK## Setup Instructions
+**Typical daily usage** (10 conversations, 5 min each):
 
-```bash
+- ~$0.05/day = **~$1.50/month**- **Framework**: MentraOS SDK## Setup Instructions
 
-bun run dev- **AI Models**: 
 
-```
 
-  - OpenAI `gpt-4o-mini` (name extraction, summarization)### 1. Install Dependencies
+See [MODEL_SELECTION.md](./docs/MODEL_SELECTION.md) for cost/performance details.```bash
+
+
+
+## Contributingbun run dev- **AI Models**: 
+
+
+
+This is a personal project, but feel free to:```
+
+- Report issues
+
+- Suggest features  - OpenAI `gpt-4o-mini` (name extraction, summarization)### 1. Install Dependencies
+
+- Fork and experiment!
 
 ### 4. Expose with ngrok
 
+## License
+
   - OpenAI `gpt-4o-transcribe-diarize` (voice recognition)
+
+MIT License - see [LICENSE](./LICENSE) file
 
 In a separate terminal:
 
+## Acknowledgments
+
 - **Storage**: Local JSON file storage (`./data/memories.json`)**With Bun (Recommended):**
 
-```bash
+- **MentraOS Team** for the excellent SDK and G1 hardware
+
+- **OpenAI** for powerful voice recognition and language models```bash
+
+- **Even Realities** for the incredible G1 smart glasses
 
 ngrok http --domain=your-static-domain.ngrok-free.app 3000- **Development**: ngrok for local tunneling```bash
 
+## Support
+
 ```
 
-cd smartglasses-memory-app
+- **Issues**: [GitHub Issues](https://github.com/ThatChocolateGuy/nametag/issues)
+
+- **Docs**: Check the [`/docs`](./docs) foldercd smartglasses-memory-app
+
+- **MentraOS**: [console.mentra.glass](https://console.mentra.glass)
 
 ### 5. Register in MentraOS Console
 
+---
+
 ## 📋 Prerequisitesbun install
+
+**Built with ❤️ for the G1 community**
 
 1. Go to [console.mentra.glass](https://console.mentra.glass)
 
