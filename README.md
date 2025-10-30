@@ -1,8 +1,8 @@
-# Nametag - Remember Everyone with G1 Smart Glasses# Nametag - Remember Names with G1 Smart Glasses
+# Nametag - Remember Everyone with G1 Smart Glasses
 
 
 
-A MentraOS cloud app for Even Realities G1 smart glasses that automatically recognizes people by voice and displays contextual conversation history—all through audio-only interaction.A MentraOS cloud app for Even Realities G1 smart glasses that automatically remembers people's names and conversation context using voice-only interaction.
+A MentraOS cloud app for Even Realities G1 smart glasses that automatically recognizes people by voice and displays contextual conversation history—all through audio-only interaction.
 
 
 
