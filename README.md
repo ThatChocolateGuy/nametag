@@ -5,34 +5,39 @@ A MentraOS cloud app for Even Realities G1 smart glasses that automatically reco
 ## Features
 
 ### Voice Biometric Recognition
+
 - Real-time speaker identification using OpenAI's voice recognition
 - Automatically detects and remembers people by their voice
 - No manual tagging or camera required—audio only
 
 ### Conversation Intelligence
+
 - Contextual key points from past conversations displayed instantly
 - Multi-conversation history tracking with timestamps
 - Automatic conversation summarization and topic extraction
 - Smart speaker ID replacement (names, not "Speaker A/B")
 
 ### Smart Introductions
+
 - Detects self-introductions ("I'm John", "My name is Sarah")
 - Creates voice profiles automatically for future recognition
 - Shows personalized greetings with last met time and conversation count
 
 ### Battery-Efficient UI
+
 - Minimal listening indicator (2-second refresh rate)
 - Optimized for G1 display constraints (240 chars, 6-8 lines)
 - Smart pause/resume when showing person information
 
 ## Architecture
 
-```
+```md
 G1 Glasses Audio → MentraOS → Cloud App (this) → OpenAI GPT-4o
                                                 → Local File Storage
 ```
 
 **Key Flow:**
+
 1. Audio streamed from G1 microphone
 2. OpenAI transcribes + identifies speakers by voice
 3. Names extracted from self-introductions
@@ -52,14 +57,17 @@ G1 Glasses Audio → MentraOS → Cloud App (this) → OpenAI GPT-4o
 ## Prerequisites
 
 ### Hardware
+
 - Even Realities G1 smart glasses
 - MentraOS mobile app
 
 ### Software
+
 - [Bun](https://bun.sh) (recommended) or Node.js 18+
 - [ngrok](https://ngrok.com) account with static domain
 
 ### API Keys
+
 - **MentraOS API Key**: [console.mentra.glass](https://console.mentra.glass)
 - **OpenAI API Key**: [platform.openai.com](https://platform.openai.com)
 
@@ -123,7 +131,8 @@ ngrok http --domain=your-static-domain.ngrok-free.app 3000
    - If unknown → Speaker tracked as "A", "B", etc. until introduction
 
 4. **Key Points Display Example**:
-   ```
+
+   ```md
    John • 3d ago • 5x
 
    • Needs report by Friday
@@ -150,7 +159,7 @@ All detailed documentation is in the root folder:
 
 ### File Structure
 
-```
+```md
 nametag/
 ├── src/
 │   ├── index.ts                      # Main app server
@@ -191,11 +200,13 @@ bun start
 ## Cost Estimate
 
 With OpenAI `gpt-4o-mini` (default):
+
 - **Name extraction**: ~$0.0001 per request
 - **Conversation summary**: ~$0.001 per conversation
 - **Voice transcription**: ~$0.002 per minute of audio
 
 **Typical daily usage** (10 conversations, 5 min each):
+
 - ~$0.05/day = **~$1.50/month**
 
 See [MODEL_SELECTION.md](./MODEL_SELECTION.md) for cost/performance details.
@@ -203,6 +214,7 @@ See [MODEL_SELECTION.md](./MODEL_SELECTION.md) for cost/performance details.
 ## Contributing
 
 This is a personal project, but feel free to:
+
 - Report issues
 - Suggest features
 - Fork and experiment!
@@ -224,4 +236,4 @@ MIT License - see [LICENSE](./LICENSE) file
 
 ---
 
-**Built with ❤️ for the G1 community**
+### Built with ❤️ for the G1 community
