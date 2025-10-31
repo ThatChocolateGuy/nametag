@@ -32,8 +32,7 @@ A MentraOS cloud app for Even Realities G1 smart glasses that automatically reco
 ## Architecture
 
 ```md
-G1 Glasses Audio → MentraOS → Cloud App (this) → OpenAI GPT-4o
-                                                → Local File Storage
+G1 Glasses Audio → MentraOS → Cloud App (this) → OpenAI GPT-4o → Local File Storage
 ```
 
 **Key Flow:**
