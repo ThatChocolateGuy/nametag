@@ -194,18 +194,22 @@ Update your README to reflect Vercel deployment:
 **Problem**: Vercel logs show:
 ```
 Error [ERR_REQUIRE_ESM]: require() of ES Module chalk/source/index.js not supported
+Error [ERR_REQUIRE_ESM]: require() of ES Module boxen/index.js not supported
 Node.js process exited with exit status: 1
 ```
 
-**Cause**: MentraOS SDK uses `require()` with `chalk`, but newer chalk versions (v5+) are ESM-only.
+**Cause**: MentraOS SDK uses `require()` (CommonJS) with terminal styling libraries (`chalk`, `boxen`), but newer versions are ESM-only:
+- chalk v5+ is ESM-only
+- boxen v6+ is ESM-only
 
 **Solution**: ✅ Already fixed in the repository!
 
-The `package.json` includes an "overrides" field that forces chalk v4.1.2 (CommonJS compatible):
+The `package.json` includes an "overrides" field that forces CommonJS-compatible versions:
 ```json
 {
   "overrides": {
-    "chalk": "^4.1.2"
+    "chalk": "^4.1.2",
+    "boxen": "^5.1.2"
   }
 }
 ```
