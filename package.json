@@ -44,5 +44,9 @@
     "@types/ws": "^8.18.0",
     "tsx": "^4.19.2",
     "typescript": "^5.0.0"
+  },
+  "resolutions": {
+    "chalk": "4.1.2",
+    "boxen": "5.1.2"
   }
 }
