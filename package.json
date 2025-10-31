@@ -9,6 +9,7 @@
     "dev": "bun --hot src/index.ts",
     "web": "bun src/webserver.ts",
     "dev:web": "bun --hot src/webserver.ts",
+    "vercel-build": "echo 'Vercel build complete'",
     "lint": "npx tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

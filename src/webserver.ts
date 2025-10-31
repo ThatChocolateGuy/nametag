@@ -223,14 +223,16 @@ app.get('*', (req: Request, res: Response) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-// Start server
-app.listen(WEB_PORT, () => {
-  console.log(`\n╔════════════════════════════════════════╗`);
-  console.log(`║     Nametag Companion UI Server        ║`);
-  console.log(`╚════════════════════════════════════════╝\n`);
-  console.log(`✓ Server running on http://localhost:${WEB_PORT}`);
-  console.log(`✓ API endpoints available at /api/*`);
-  console.log(`✓ MentraOS auth enabled\n`);
-});
+// Start server (only when not running on Vercel)
+if (process.env.VERCEL !== '1') {
+  app.listen(WEB_PORT, () => {
+    console.log(`\n╔════════════════════════════════════════╗`);
+    console.log(`║     Nametag Companion UI Server        ║`);
+    console.log(`╚════════════════════════════════════════╝\n`);
+    console.log(`✓ Server running on http://localhost:${WEB_PORT}`);
+    console.log(`✓ API endpoints available at /api/*`);
+    console.log(`✓ MentraOS auth enabled\n`);
+  });
+}
 
 export { app, storageClient };

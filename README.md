@@ -151,9 +151,11 @@ Access your data through the web interface:
 # Start the companion UI
 bun run dev:web
 
-# Open in browser
+# Open in browser (local)
 http://localhost:3001
 ```
+
+**Mobile Access**: Access the companion UI from your phone through the MentraOS app! See **[Mobile Access Guide](./docs/COMPANION_UI_MOBILE_ACCESS.md)** for setup.
 
 Features:
 - View all people and conversations
@@ -161,6 +163,7 @@ Features:
 - Add manual notes
 - Export data
 - Delete people
+- Works on desktop and mobile (via MentraOS app)
 
 See **[COMPANION_UI.md](./docs/COMPANION_UI.md)** for full guide.
 
@@ -169,6 +172,7 @@ See **[COMPANION_UI.md](./docs/COMPANION_UI.md)** for full guide.
 All detailed documentation is in the `docs/` folder:
 
 - **[COMPANION_UI.md](./docs/COMPANION_UI.md)** - Web interface guide
+- **[COMPANION_UI_MOBILE_ACCESS.md](./docs/COMPANION_UI_MOBILE_ACCESS.md)** - Mobile access setup
 - **[QUICKSTART.md](./docs/QUICKSTART.md)** - Step-by-step setup guide
 - **[IMPLEMENTATION.md](./docs/IMPLEMENTATION.md)** - Technical architecture details
 - **[TESTING_GUIDE.md](./docs/TESTING_GUIDE.md)** - How to test the app

@@ -49,6 +49,17 @@ The Nametag Companion UI is a web-based interface that allows you to view, manag
    - Token is exchanged for a secure session cookie
    - Session lasts 7 days
 
+### Mobile Access (MentraOS App)
+
+Want to access the companion UI from your phone? See the **[Mobile Access Guide](./COMPANION_UI_MOBILE_ACCESS.md)** for complete setup instructions.
+
+**Quick Summary**:
+1. Expose companion UI with ngrok on port 3001
+2. Configure "Webview URL" in MentraOS console
+3. Access from MentraOS mobile app
+
+This allows you to view and manage your contacts directly from your phone without needing a computer.
+
 ## Using the Interface
 
 ### Dashboard

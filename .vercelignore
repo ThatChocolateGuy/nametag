@@ -1,0 +1,45 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+.next
+out
+
+# Local data (not needed on Vercel - will use environment-specific storage)
+data
+temp
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+
+# Documentation (not needed for runtime)
+docs
+*.md
+!README.md
+
+# IDE
+.vscode
+.idea
+
+# Logs
+*.log
+logs
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage
+
+# Main app files (not needed for companion UI)
+src/index.ts
+src/services/conversationManager.ts
+src/services/nameExtractionService.ts
