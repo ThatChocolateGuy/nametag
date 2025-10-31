@@ -44,6 +44,7 @@
     "typescript": "^5.0.0"
   },
   "overrides": {
-    "chalk": "^4.1.2"
+    "chalk": "^4.1.2",
+    "boxen": "^5.1.2"
   }
 }
