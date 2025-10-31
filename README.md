@@ -146,14 +146,14 @@ ngrok http --domain=your-static-domain.ngrok-free.app 3000
 
 ## Documentation
 
-All detailed documentation is in the root folder:
+All detailed documentation is in the `docs/` folder:
 
-- **[QUICKSTART.md](./QUICKSTART.md)** - Step-by-step setup guide
-- **[IMPLEMENTATION.md](./IMPLEMENTATION.md)** - Technical architecture details
-- **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** - How to test the app
-- **[MODEL_SELECTION.md](./MODEL_SELECTION.md)** - OpenAI model configuration
-- **[STORAGE.md](./STORAGE.md)** - Data storage structure
-- **[TROUBLESHOOTING_NGROK.md](./TROUBLESHOOTING_NGROK.md)** - Common ngrok issues
+- **[QUICKSTART.md](./docs/QUICKSTART.md)** - Step-by-step setup guide
+- **[IMPLEMENTATION.md](./docs/IMPLEMENTATION.md)** - Technical architecture details
+- **[TESTING_GUIDE.md](./docs/TESTING_GUIDE.md)** - How to test the app
+- **[MODEL_SELECTION.md](./docs/MODEL_SELECTION.md)** - OpenAI model configuration
+- **[STORAGE.md](./docs/STORAGE.md)** - Data storage structure
+- **[TROUBLESHOOTING_NGROK.md](./docs/TROUBLESHOOTING_NGROK.md)** - Common ngrok issues
 
 ## Development
 
@@ -209,7 +209,7 @@ With OpenAI `gpt-4o-mini` (default):
 
 - ~$0.05/day = **~$1.50/month**
 
-See [MODEL_SELECTION.md](./MODEL_SELECTION.md) for cost/performance details.
+See [MODEL_SELECTION.md](./docs/MODEL_SELECTION.md) for cost/performance details.
 
 ## Contributing
 
