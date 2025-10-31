@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express, { Request, Response } from 'express';
+import express, { Request, Response, RequestHandler } from 'express';
 import path from 'path';
 import { FileStorageClient, Person } from './services/fileStorageClient';
 import { createAuthMiddleware } from '@mentra/sdk';
@@ -38,7 +38,7 @@ const authMiddleware = createAuthMiddleware({
  * GET /api/people
  * Get all stored people
  */
-app.get('/api/people', authMiddleware, async (req: Request, res: Response) => {
+app.get('/api/people', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
   try {
     const people = await storageClient.getAllPeople();
 
@@ -60,7 +60,7 @@ app.get('/api/people', authMiddleware, async (req: Request, res: Response) => {
  * GET /api/people/:name
  * Get a specific person by name
  */
-app.get('/api/people/:name', authMiddleware, async (req: Request, res: Response) => {
+app.get('/api/people/:name', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
   try {
     const { name } = req.params;
     const person = await storageClient.findPersonByName(name);
@@ -80,7 +80,7 @@ app.get('/api/people/:name', authMiddleware, async (req: Request, res: Response)
  * PUT /api/people/:name
  * Update a person's information
  */
-app.put('/api/people/:name', authMiddleware, async (req: Request, res: Response) => {
+app.put('/api/people/:name', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
   try {
     const { name } = req.params;
     const person = await storageClient.findPersonByName(name);
@@ -109,7 +109,7 @@ app.put('/api/people/:name', authMiddleware, async (req: Request, res: Response)
  * DELETE /api/people/:name
  * Delete a person
  */
-app.delete('/api/people/:name', authMiddleware, async (req: Request, res: Response) => {
+app.delete('/api/people/:name', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
   try {
     const { name } = req.params;
     const success = await storageClient.deletePerson(name);
@@ -129,7 +129,7 @@ app.delete('/api/people/:name', authMiddleware, async (req: Request, res: Respon
  * POST /api/people/:name/notes
  * Add a note to a person's conversation history
  */
-app.post('/api/people/:name/notes', authMiddleware, async (req: Request, res: Response) => {
+app.post('/api/people/:name/notes', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
   try {
     const { name } = req.params;
     const { note } = req.body;
@@ -167,7 +167,7 @@ app.post('/api/people/:name/notes', authMiddleware, async (req: Request, res: Re
  * GET /api/stats
  * Get storage statistics
  */
-app.get('/api/stats', authMiddleware, async (req: Request, res: Response) => {
+app.get('/api/stats', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
   try {
     const stats = storageClient.getStats();
     const people = await storageClient.getAllPeople();
@@ -200,7 +200,7 @@ app.get('/api/stats', authMiddleware, async (req: Request, res: Response) => {
  * GET /api/export
  * Export all data as JSON
  */
-app.get('/api/export', authMiddleware, async (req: Request, res: Response) => {
+app.get('/api/export', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
   try {
     const data = storageClient.exportData();
 
@@ -225,9 +225,9 @@ app.get('*', (req: Request, res: Response) => {
 
 // Start server
 app.listen(WEB_PORT, () => {
-  console.log(`\n╔═════════════════════════════════════════╗`);
+  console.log(`\n╔════════════════════════════════════════╗`);
   console.log(`║     Nametag Companion UI Server        ║`);
-  console.log(`╚═════════════════════════════════════════╝\n`);
+  console.log(`╚════════════════════════════════════════╝\n`);
   console.log(`✓ Server running on http://localhost:${WEB_PORT}`);
   console.log(`✓ API endpoints available at /api/*`);
   console.log(`✓ MentraOS auth enabled\n`);

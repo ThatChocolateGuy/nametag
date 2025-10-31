@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
-import { Person } from './memoryClient';
+import { Person } from './fileStorageClient';
 
 export interface TranscriptionSegment {
   speaker: string;  // Actual name or "Unknown"
