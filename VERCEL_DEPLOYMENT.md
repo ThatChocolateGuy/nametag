@@ -204,22 +204,27 @@ Node.js process exited with exit status: 1
 
 **Solution**: ✅ Already fixed in the repository!
 
-The `package.json` includes an "overrides" field that forces CommonJS-compatible versions:
+The `package.json` pins CommonJS-compatible versions as direct dependencies:
 ```json
 {
-  "overrides": {
-    "chalk": "^4.1.2",
-    "boxen": "^5.1.2"
+  "dependencies": {
+    "chalk": "4.1.2",
+    "boxen": "5.1.2",
+    ...
   }
 }
 ```
 
+This forces the entire dependency tree (including MentraOS SDK) to use these versions.
+
 If you still see this error:
 1. Make sure you pulled the latest code: `git pull origin main`
-2. Delete `node_modules` and `package-lock.json`
-3. Run `npm install` to reinstall with overrides
-4. Commit `package-lock.json` if it changed
-5. Push to GitHub to trigger Vercel redeploy
+2. Verify `package.json` has chalk and boxen as direct dependencies
+3. Delete `node_modules` and `package-lock.json` locally
+4. Run `npm install` to reinstall
+5. Commit `package-lock.json` if it changed
+6. Push to GitHub to trigger Vercel redeploy
+7. In Vercel dashboard, check deployment logs to confirm versions
 
 ### "MENTRAOS_API_KEY is not set" Error
 
