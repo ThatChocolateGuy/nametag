@@ -189,6 +189,34 @@ Update your README to reflect Vercel deployment:
 }
 ```
 
+### "ERR_REQUIRE_ESM" Error (500 Status)
+
+**Problem**: Vercel logs show:
+```
+Error [ERR_REQUIRE_ESM]: require() of ES Module chalk/source/index.js not supported
+Node.js process exited with exit status: 1
+```
+
+**Cause**: MentraOS SDK uses `require()` with `chalk`, but newer chalk versions (v5+) are ESM-only.
+
+**Solution**: ✅ Already fixed in the repository!
+
+The `package.json` includes an "overrides" field that forces chalk v4.1.2 (CommonJS compatible):
+```json
+{
+  "overrides": {
+    "chalk": "^4.1.2"
+  }
+}
+```
+
+If you still see this error:
+1. Make sure you pulled the latest code: `git pull origin main`
+2. Delete `node_modules` and `package-lock.json`
+3. Run `npm install` to reinstall with overrides
+4. Commit `package-lock.json` if it changed
+5. Push to GitHub to trigger Vercel redeploy
+
 ### "MENTRAOS_API_KEY is not set" Error
 
 **Problem**: Environment variables not configured on Vercel
