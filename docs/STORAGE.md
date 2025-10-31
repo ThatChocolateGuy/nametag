@@ -1,91 +1,24 @@
-# Storage Options
+# Storage
 
-This app supports two storage backends for person data:
+This app uses local JSON file storage for person data and conversation history.
 
-## 1. Memory MCP Server (Default)
-
-**Status**: ⚠️ Currently blocked by SSE timeout issue
-
-Cloud-based persistence using Memory MCP protocol.
-
-**Pros**:
-
-- Centralized storage
-- Accessible from multiple devices
-- Built-in search capabilities
-- No local file management
-
-**Cons**:
-
-- Requires network connectivity
-- SSE connection currently timing out
-- External dependency
-
-**Configuration**:
-
-```env
-MEMORY_MCP_URL=https://memory.mcpgenerator.com/{uuid}/sse
-```
-
-## 2. File Storage (Recommended Alternative)
+## File Storage
 
 Local JSON file storage at `./data/memories.json`
 
-**Pros**:
-
+**Benefits**:
 - Works immediately, no network required
 - Simple and reliable
 - Easy to backup/export
 - No external dependencies
 - Fast performance
 
-**Cons**:
-
-- Local only (not synced across devices)
-- Manual backup required
-- Limited to single machine
-
 **Storage Location**:
 
-```md
+```
 smartglasses-memory-app/
 └── data/
     └── memories.json
-```
-
-## Switching Storage Backends
-
-### Option 1: Environment Variable (Coming Soon)
-
-```env
-# In .env
-STORAGE_BACKEND=file  # or 'mcp'
-```
-
-### Option 2: Code Change (Current Method)
-
-Edit `src/index.ts`:
-
-**Use File Storage**:
-
-```typescript
-// Line 7-8 - Comment out MemoryClient, import FileStorageClient
-// import { MemoryClient } from './services/memoryClient';
-import { FileStorageClient as MemoryClient } from './services/fileStorageClient';
-
-// Line 34 - Change initialization
-this.memoryClient = new MemoryClient('./data');  // Path to data directory
-```
-
-**Use Memory MCP**:
-
-```typescript
-// Line 7-8 - Use MemoryClient
-import { MemoryClient } from './services/memoryClient';
-// import { FileStorageClient as MemoryClient } from './services/fileStorageClient';
-
-// Line 34 - Change initialization
-this.memoryClient = new MemoryClient(MEMORY_MCP_URL);
 ```
 
 ## File Storage Data Format
@@ -93,19 +26,24 @@ this.memoryClient = new MemoryClient(MEMORY_MCP_URL);
 ```json
 {
   "people": {
-    "person_Speaker A": {
+    "person_john_smith": {
       "name": "John Smith",
-      "speakerId": "Speaker A",
-      "lastConversation": "Discussed project deadline and vacation plans",
-      "lastTopics": ["project", "deadline", "vacation"],
+      "speakerId": "A",
+      "voiceReference": "base64_encoded_audio_clip...",
+      "conversationHistory": [
+        {
+          "date": "2025-10-25T19:30:00.000Z",
+          "transcript": "Discussed project deadline and vacation plans",
+          "topics": ["project", "deadline", "vacation"],
+          "keyPoints": [
+            "Needs report by Friday",
+            "Budget approval pending",
+            "Team meeting scheduled"
+          ],
+          "duration": 320
+        }
+      ],
       "lastMet": "2025-10-25T19:30:00.000Z"
-    },
-    "person_Speaker B": {
-      "name": "Sarah Johnson",
-      "speakerId": "Speaker B",
-      "lastConversation": "Talked about team collaboration",
-      "lastTopics": ["teamwork", "collaboration"],
-      "lastMet": "2025-10-25T19:35:00.000Z"
     }
   },
   "version": "1.0.0",
@@ -132,7 +70,7 @@ type data\memories.json
 cp data/memories.json data/backup-$(date +%Y%m%d-%H%M%S).json
 
 # Or on Windows
-copy data\memories.json data\backup-%date:~-4,4%%date:~-10,2%%date:~-7,2%-%time:~0,2%%time:~3,2%%time:~6,2%.json
+copy data\memories.json data\backup.json
 ```
 
 ### Restore from Backup
@@ -159,42 +97,38 @@ rm data/memories.json
 del data\memories.json
 ```
 
-## API Methods (Both Backends)
+## API Methods
 
-Both `MemoryClient` and `FileStorageClient` implement the same interface:
-
-```typescript
-// Store a person
-await memoryClient.storePerson({
-  name: "John Smith",
-  speakerId: "Speaker A",
-  lastConversation: "Discussed project",
-  lastTopics: ["project", "deadline"],
-  lastMet: new Date()
-});
-
-// Retrieve by speaker ID
-const person = await memoryClient.getPerson("Speaker A");
-// Returns: Person object or null
-
-// Find by name (case-insensitive)
-const found = await memoryClient.findPersonByName("John");
-// Returns: Person object or null
-```
-
-### File Storage Exclusive Methods
+The `FileStorageClient` provides these methods:
 
 ```typescript
 import { FileStorageClient } from './services/fileStorageClient';
 
 const storage = new FileStorageClient('./data');
 
+// Store a person
+await storage.storePerson({
+  name: "John Smith",
+  speakerId: "A",
+  voiceReference: "base64_audio...",
+  conversationHistory: [],
+  lastMet: new Date()
+});
+
+// Retrieve by speaker ID or name
+const person = await storage.getPerson("A");
+// Returns: Person object or null
+
+// Find by name (case-insensitive)
+const found = await storage.findPersonByName("John");
+// Returns: Person object or null
+
 // Get all people
 const everyone = await storage.getAllPeople();
 // Returns: Person[]
 
 // Delete person
-await storage.deletePerson("Speaker A");
+await storage.deletePerson("John Smith");
 
 // Clear all data
 await storage.clearAll();
@@ -238,8 +172,8 @@ const pool = new Pool({
 
 async storePerson(person: Person): Promise<void> {
   await pool.query(
-    'INSERT INTO people (name, speaker_id, last_conversation, last_topics, last_met) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (speaker_id) DO UPDATE SET name = $1, last_conversation = $3, last_topics = $4, last_met = $5',
-    [person.name, person.speakerId, person.lastConversation, person.lastTopics, person.lastMet]
+    'INSERT INTO people (name, speaker_id, voice_reference, conversation_history, last_met) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (speaker_id) DO UPDATE SET name = $1, voice_reference = $3, conversation_history = $4, last_met = $5',
+    [person.name, person.speakerId, person.voiceReference, JSON.stringify(person.conversationHistory), person.lastMet]
   );
 }
 ```
@@ -308,55 +242,6 @@ class HybridStorage {
    # Creates: data/memories.json.gpg
    ```
 
-### Memory MCP Security
-
-1. Keep UUID secret (treat like API key)
-2. Use HTTPS only (never HTTP)
-3. Implement rate limiting
-4. Monitor for unauthorized access
-
-## Migration Between Backends
-
-### Memory MCP → File Storage
-
-1. Export from Memory MCP (when SSE works):
-
-   ```typescript
-   const memories = await mcpClient.getAllMemories();
-   const fileClient = new FileStorageClient('./data');
-
-   for (const memory of memories) {
-     const person = JSON.parse(memory.content);
-     await fileClient.storePerson(person);
-   }
-   ```
-
-2. Verify migration:
-
-   ```bash
-   cat data/memories.json | jq '.people | length'
-   ```
-
-### File Storage → Memory MCP
-
-1. Export file storage:
-
-   ```typescript
-   const fileClient = new FileStorageClient('./data');
-   const people = await fileClient.getAllPeople();
-
-   const mcpClient = new MemoryClient(MEMORY_MCP_URL);
-   for (const person of people) {
-     await mcpClient.storePerson(person);
-   }
-   ```
-
-2. Verify migration:
-
-   ```bash
-   curl -k "https://memory.mcpgenerator.com/{uuid}/memories"
-   ```
-
 ## Troubleshooting
 
 ### File Storage Issues
@@ -384,48 +269,24 @@ rm data/memories.json
 # Will be recreated on next app start
 ```
 
-### Memory MCP Issues
-
-**Problem**: SSE timeout
-**Solution**: Use file storage alternative (recommended)
-
-**Problem**: 404 errors
-**Solution**: Verify Memory MCP URL is correct
-
-## Performance Comparison
-
-| Feature | File Storage | Memory MCP |
-|---------|-------------|------------|
-| Latency | < 1ms | 50-200ms |
-| Reliability | ★★★★★ | ★★★☆☆ (SSE issues) |
-| Setup | Immediate | Requires URL |
-| Multi-device | ❌ | ✅ |
-| Backup | Manual | Automatic |
-| Search | Fast (in-memory) | Fast (server-side) |
-| Scalability | Limited | High |
-
 ## Recommendations
 
 **Development**: Use file storage
-
 - Fast, reliable, easy debugging
 - No network dependencies
 - Simple backup/restore
 
 **Production (Single User)**: Use file storage
-
 - Most reliable option
 - Easy to backup
 - No external dependencies
 
 **Production (Multi-User/Device)**: Use database
-
 - PostgreSQL or MongoDB
 - Proper multi-user support
 - ACID transactions
 
 **Production (Enterprise)**: Use cloud database
-
 - AWS RDS, Google Cloud SQL
 - Automatic backups
 - High availability

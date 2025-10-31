@@ -167,8 +167,7 @@ nametag/
 │       ├── conversationManager.ts    # Conversation orchestration
 │       ├── nameExtractionService.ts  # OpenAI name extraction
 │       ├── openaiTranscriptionService.ts  # Voice recognition
-│       ├── fileStorageClient.ts      # Local storage
-│       └── memoryClient.ts           # Legacy MCP interface
+│       └── fileStorageClient.ts      # Local storage
 ├── data/
 │   └── memories.json                 # Person database
 └── temp/                             # Temp audio files
@@ -176,7 +175,7 @@ nametag/
 
 ### Key Design Patterns
 
-**Dual Storage Strategy**: Uses local file storage (primary) with MCP server interface (legacy) for easy swapping.
+**Local File Storage**: Uses JSON file storage at `./data/memories.json` for persistent data.
 
 **Service Dependency Injection**: ConversationManager orchestrates all services (storage, AI, transcription) with clean interfaces.
 

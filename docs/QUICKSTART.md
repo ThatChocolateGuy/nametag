@@ -83,7 +83,6 @@ Get your Nametag app running in 5 minutes!
    ASSEMBLYAI_API_KEY=your_assemblyai_key_here
    OPENAI_API_KEY=sk-your_openai_api_key_here
    OPENAI_MODEL=gpt-4o-mini
-   MEMORY_MCP_URL=https://memory.mcpgenerator.com/871b2b4d-418f-4c41-ad97-52d5b46c8772/sse
    ```
 
    **Note**: `OPENAI_MODEL=gpt-4o-mini` is the recommended default. See `MODEL_SELECTION.md` for other options.
@@ -187,7 +186,7 @@ Say your name again.
 1. **Audio Capture**: Glasses mic → MentraOS → Your app
 2. **Transcription**: MentraOS provides real-time text
 3. **Name Extraction**: OpenAI GPT-4o-mini analyzes text for introductions
-4. **Storage**: Names + context saved to Memory MCP
+4. **Storage**: Names + context saved to local JSON file
 5. **Recognition**: On next meeting, retrieves and displays info
 
 ## Next Steps
@@ -226,7 +225,7 @@ For typical daily use (10 conversations, 5 minutes each):
 
 - **AssemblyAI**: $0 (not used in POC)
 
-- **Memory MCP**: $0 (free tier)
+- **Storage**: $0 (local file storage)
 
 - **Total**: < $0.02/day (about $0.50/month for heavy use!)
 

@@ -1,4 +1,4 @@
-import { Person, ConversationEntry } from './memoryClient';
+import { Person, ConversationEntry } from './fileStorageClient';
 import { NameExtractionService } from './nameExtractionService';
 import { OpenAITranscriptionService } from './openaiTranscriptionService';
 
