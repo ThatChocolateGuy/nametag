@@ -8,6 +8,9 @@ This guide walks you through deploying the Nametag Companion UI to Vercel for pe
 - [x] Git repository pushed to GitHub
 - [x] MentraOS API key and package name
 - [x] Main app still runs locally (or deployed separately)
+- [x] **Yarn installed** (project uses Yarn for dependency resolution)
+
+> **Important**: This project uses **Yarn**, not npm. Vercel will automatically detect `yarn.lock` and use Yarn for installation. The MentraOS SDK has ESM/CommonJS compatibility issues that only Yarn's `resolutions` field can properly solve.
 
 ## Important: Data Storage Limitation
 
@@ -204,27 +207,34 @@ Node.js process exited with exit status: 1
 
 **Solution**: ✅ Already fixed in the repository!
 
-The `package.json` pins CommonJS-compatible versions as direct dependencies:
+The project uses **Yarn** (not npm) to enforce dependency resolutions:
+
+`package.json`:
 ```json
 {
   "dependencies": {
     "chalk": "4.1.2",
     "boxen": "5.1.2",
     ...
+  },
+  "resolutions": {
+    "chalk": "4.1.2",
+    "boxen": "5.1.2"
   }
 }
 ```
 
-This forces the entire dependency tree (including MentraOS SDK) to use these versions.
+**Why Yarn?** npm doesn't properly respect dependency resolutions - the MentraOS SDK would install its own nested ESM versions. Yarn enforces the `resolutions` field, ensuring all packages use our pinned CommonJS versions.
+
+**Vercel automatically detects `yarn.lock`** and uses Yarn for installation.
 
 If you still see this error:
-1. Make sure you pulled the latest code: `git pull origin main`
-2. Verify `package.json` has chalk and boxen as direct dependencies
-3. Delete `node_modules` and `package-lock.json` locally
-4. Run `npm install` to reinstall
-5. Commit `package-lock.json` if it changed
-6. Push to GitHub to trigger Vercel redeploy
-7. In Vercel dashboard, check deployment logs to confirm versions
+1. Pull latest code: `git pull origin main`
+2. Verify `yarn.lock` exists (not `package-lock.json`)
+3. Locally, delete `node_modules` and reinstall with `yarn install`
+4. Push to GitHub to trigger Vercel redeploy
+5. Check Vercel logs for "Using Yarn" message
+6. Verify no nested chalk/boxen in SDK: `node_modules/@mentra/sdk/node_modules/` should only have utility packages
 
 ### "MENTRAOS_API_KEY is not set" Error
 
