@@ -16,9 +16,9 @@ I've successfully created a **working proof-of-concept** smart glasses app that 
 
 ### Core Components
 
-1. **Memory MCP Client** (`memoryClient.ts`)
-   - Interfaces with your provided MCP server
-   - Stores and retrieves person data
+1. **File Storage Client** (`fileStorageClient.ts`)
+   - Local JSON file storage for person data
+   - Fast and reliable storage operations
    - Handles conversation summaries and topics
    - Search functionality for finding people
 
@@ -119,7 +119,7 @@ I've successfully created a **working proof-of-concept** smart glasses app that 
    ↓
 5. Every 30s: GPT-4o-mini analyzes for names
    ↓
-6. Name found → Store in Memory MCP
+6. Name found → Store in local JSON file
    ↓
 7. Display: "Nice to meet you John Smith!"
 
@@ -127,7 +127,7 @@ I've successfully created a **working proof-of-concept** smart glasses app that 
 
 8. Person speaks → "Hello, I'm John Smith"
    ↓
-9. App queries Memory MCP
+9. App queries local storage
    ↓
 10. Person found with history
    ↓
@@ -160,8 +160,8 @@ smartglasses-memory-app/
 │   │   └── Main MentraOS app with session handling
 │   │
 │   └── services/
-│       ├── memoryClient.ts (153 lines)
-│       │   └── Memory MCP integration
+│       ├── fileStorageClient.ts
+│       │   └── Local JSON file storage
 │       │
 │       ├── nameExtractionService.ts (178 lines)
 │       │   └── OpenAI GPT-4o-mini for name extraction & summarization
@@ -197,15 +197,15 @@ smartglasses-memory-app/
 
 3. **Buffered Name Detection**: Every 30 seconds
    - Balances cost vs. responsiveness
-   - Reduces API calls to Claude
+   - Reduces API calls to OpenAI
    - More context for better accuracy
    - Configurable timing
 
-4. **Memory MCP**: Externalized storage
-   - Decouples data persistence
-   - Easy to switch providers
-   - No database management
-   - Simple API
+4. **Local File Storage**: Simple and reliable
+   - No external dependencies
+   - Fast performance (< 1ms)
+   - Easy backup and restore
+   - Simple JSON format
 
 ### Technical Tradeoffs
 
@@ -246,7 +246,7 @@ smartglasses-memory-app/
 3. **Memory Search Simplicity**
    - Basic name matching
    - No fuzzy search
-   - **Solution**: Implement better search in Memory MCP
+   - **Solution**: Implement fuzzy search in FileStorageClient
 
 4. **No Voice Biometrics**
    - Can't identify speakers by voice
@@ -339,8 +339,8 @@ These are prepared but not implemented:
 - API errors or connection issues
 
 **Common Issues**:
-- Names not detected → Check Anthropic API key
-- Not persisting → Check Memory MCP URL
+- Names not detected → Check OpenAI API key
+- Not persisting → Check file permissions on ./data/
 - No transcription → Check microphone permission
 - Display not showing → Check ngrok connection
 
@@ -360,11 +360,11 @@ Assuming 10 conversations, 5 minutes each:
 - 50 minutes audio × $0.02/hr = $0.017/day
 - **Subtotal**: ~$0.02/day
 
-**Memory MCP**:
-- Free tier sufficient
+**Storage**:
+- Local file storage (free)
 - **Subtotal**: $0
 
-**Total**: ~$0.035/day = **~$1/month** for active use (5x cheaper than Claude!)
+**Total**: ~$0.035/day = **~$1/month** for active use
 
 ### Cost Optimization
 
@@ -389,7 +389,7 @@ For heavy users:
    ```
 
 3. **Customize Prompts** (nameExtractionService.ts:31, 89)
-   - Modify Claude prompts
+   - Modify OpenAI prompts
    - Adjust confidence thresholds
    - Change output formats
 
@@ -475,7 +475,7 @@ Must implement:
 - **AssemblyAI**: Speech-to-text & diarization (prepared)
 
 ### Storage
-- **Memory MCP Server**: Persistent storage
+- **Local JSON Files**: Fast, simple file-based storage
 
 ### Development
 - **tsx**: TypeScript execution
@@ -490,7 +490,7 @@ Must implement:
 ✅ **Person Recognition**: Remembers people across sessions
 ✅ **Context Display**: Shows last conversation summary
 ✅ **MentraOS Integration**: Works with Even Realities G1
-✅ **MCP Server Integration**: Uses provided memory server
+✅ **Local Storage**: Fast file-based persistence
 ✅ **Cheap/Free APIs**: < $1/day operational cost
 ✅ **Easy Development**: MentraOS SDK simplifies implementation
 ✅ **Working POC**: Builds and runs successfully
@@ -500,9 +500,8 @@ Must implement:
 This project leverages excellent open-source and commercial tools:
 
 - **MentraOS Team**: For the smart glasses platform
-- **Anthropic**: For Claude AI capabilities
-- **AssemblyAI**: For speech recognition technology
-- **Memory MCP**: For simple persistent storage
+- **OpenAI**: For GPT-4o voice recognition and AI capabilities
+- **AssemblyAI**: For speech recognition technology (future enhancement)
 
 ## 📖 Next Steps for You
 
@@ -545,14 +544,14 @@ This project leverages excellent open-source and commercial tools:
 **Fix**: Implement AssemblyAI diarization (Phase 2)
 
 ### Issue: API costs add up in testing
-**Cause**: Frequent Claude API calls
+**Cause**: Frequent OpenAI API calls
 **Workaround**: Use longer PROCESS_INTERVAL during development
 **Fix**: Add local caching layer
 
 ## 📞 Support & Community
 
 - **MentraOS Discord**: Technical support for glasses integration
-- **Anthropic Docs**: Claude API reference and best practices
+- **OpenAI Docs**: API reference and best practices
 - **AssemblyAI Docs**: Speech recognition implementation guides
 
 ## 🎊 Conclusion
@@ -572,6 +571,6 @@ The foundation is solid for building a production-ready application. All major c
 
 ---
 
-Built with ❤️ using MentraOS, Claude, and the power of AI.
+Built with ❤️ using MentraOS, OpenAI GPT-4o, and the power of AI.
 
 *Remember: With great power comes great responsibility. Use wisely and respect privacy!*

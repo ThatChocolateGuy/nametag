@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nametag - Companion UI</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>👤 Nametag</h1>
+            <p class="subtitle">Companion Interface</p>
+            <div id="stats" class="stats-bar">
+                <span id="stat-people">0 people</span>
+                <span id="stat-conversations">0 conversations</span>
+                <span id="stat-voices">0 voices</span>
+            </div>
+        </header>
+
+        <!-- Search and Filter -->
+        <div class="toolbar">
+            <input type="text" id="search" placeholder="Search by name..." class="search-input">
+            <button id="refresh-btn" class="btn btn-secondary">🔄 Refresh</button>
+            <button id="export-btn" class="btn btn-secondary">📥 Export</button>
+        </div>
+
+        <!-- People List -->
+        <div id="people-list" class="people-list">
+            <div class="loading">Loading...</div>
+        </div>
+
+        <!-- Person Detail Modal -->
+        <div id="person-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modal-name">Person Name</h2>
+                    <button id="modal-close" class="btn-close">&times;</button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="person-info">
+                        <div class="info-item">
+                            <span class="label">Speaker ID:</span>
+                            <span id="modal-speaker-id">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Last Met:</span>
+                            <span id="modal-last-met">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Total Conversations:</span>
+                            <span id="modal-conversation-count">0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Voice Profile:</span>
+                            <span id="modal-voice-status">-</span>
+                        </div>
+                    </div>
+
+                    <h3>Conversation History</h3>
+                    <div id="modal-conversations" class="conversation-list">
+                        <!-- Conversations will be loaded here -->
+                    </div>
+
+                    <div class="add-note-section">
+                        <h3>Add Manual Note</h3>
+                        <textarea id="note-input" placeholder="Enter a note about this person..." rows="3"></textarea>
+                        <button id="add-note-btn" class="btn btn-primary">Add Note</button>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button id="delete-person-btn" class="btn btn-danger">Delete Person</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast" class="toast hidden"></div>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>

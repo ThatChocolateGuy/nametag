@@ -7,6 +7,8 @@
     "build": "bun build src/index.ts --outdir dist --target node",
     "start": "bun src/index.ts",
     "dev": "bun --hot src/index.ts",
+    "web": "bun src/webserver.ts",
+    "dev:web": "bun --hot src/webserver.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "ThatChocolateGuy",

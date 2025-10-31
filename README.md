@@ -144,10 +144,32 @@ ngrok http --domain=your-static-domain.ngrok-free.app 3000
    - Summary automatically saved
    - Key points extracted for next meeting
 
+## Using the Companion UI
+
+Access your data through the web interface:
+
+```bash
+# Start the companion UI
+bun run dev:web
+
+# Open in browser
+http://localhost:3001
+```
+
+Features:
+- View all people and conversations
+- Search and filter
+- Add manual notes
+- Export data
+- Delete people
+
+See **[COMPANION_UI.md](./docs/COMPANION_UI.md)** for full guide.
+
 ## Documentation
 
 All detailed documentation is in the `docs/` folder:
 
+- **[COMPANION_UI.md](./docs/COMPANION_UI.md)** - Web interface guide
 - **[QUICKSTART.md](./docs/QUICKSTART.md)** - Step-by-step setup guide
 - **[IMPLEMENTATION.md](./docs/IMPLEMENTATION.md)** - Technical architecture details
 - **[TESTING_GUIDE.md](./docs/TESTING_GUIDE.md)** - How to test the app
