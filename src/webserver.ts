@@ -20,6 +20,11 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Health check (no auth required) - MUST be first route
+app.get('/health', (req: Request, res: Response) => {
+  res.json({ status: 'ok', storage: storageClient.isReady() });
+});
+
 // MentraOS authentication middleware
 const authMiddleware = createAuthMiddleware({
   apiKey: MENTRAOS_API_KEY,
@@ -211,11 +216,6 @@ app.get('/api/export', authMiddleware as RequestHandler, async (req: Request, re
     console.error('Error exporting data:', error);
     res.status(500).json({ success: false, error: 'Failed to export data' });
   }
-});
-
-// Health check (no auth required)
-app.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', storage: storageClient.isReady() });
 });
 
 // Serve index.html for root and any unmatched routes (SPA fallback)
