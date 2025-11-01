@@ -1,5 +1,11 @@
 {
   "version": 2,
+  "functions": {
+    "api/health.ts": {
+      "memory": 128,
+      "maxDuration": 10
+    }
+  },
   "rewrites": [
     {
       "source": "/health",
