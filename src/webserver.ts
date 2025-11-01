@@ -16,14 +16,17 @@ const storageClient = new FileStorageClient('./data');
 // Create Express app
 const app = express();
 
+// Health check middleware - bypasses ALL other middleware
+app.use((req, res, next) => {
+  if (req.path === '/health') {
+    return res.json({ status: 'ok', storage: storageClient.isReady() });
+  }
+  next();
+});
+
 // Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
-
-// Health check (no auth required) - MUST be first route
-app.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', storage: storageClient.isReady() });
-});
 
 // MentraOS authentication middleware
 const authMiddleware = createAuthMiddleware({
