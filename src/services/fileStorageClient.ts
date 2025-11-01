@@ -28,28 +28,47 @@ interface StorageData {
 /**
  * File-based storage client - drop-in replacement for MemoryClient
  * Stores person data in local JSON file at ./data/memories.json
+ *
+ * Note: On Vercel (read-only filesystem), operates in read-only mode
  */
 export class FileStorageClient {
   private filePath: string;
   private isConnected = true;
+  private isReadOnly = false;
 
   constructor(dataDir: string = './data') {
     // Set up data directory and file path
     this.filePath = path.join(dataDir, 'memories.json');
 
-    // Ensure data directory exists
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-      console.log(`Created data directory: ${dataDir}`);
+    // Try to ensure data directory exists
+    try {
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+        console.log(`Created data directory: ${dataDir}`);
+      }
+    } catch (error) {
+      console.warn(`Cannot create data directory (read-only filesystem): ${dataDir}`);
+      this.isReadOnly = true;
     }
 
-    // Initialize storage file if it doesn't exist
-    if (!fs.existsSync(this.filePath)) {
-      this.initializeStorage();
+    // Try to initialize storage file if it doesn't exist
+    if (!this.isReadOnly && !fs.existsSync(this.filePath)) {
+      try {
+        this.initializeStorage();
+      } catch (error) {
+        console.warn(`Cannot initialize storage file (read-only filesystem): ${this.filePath}`);
+        this.isReadOnly = true;
+      }
     }
 
-    console.log(`File Storage Client initialized`);
-    console.log(`Storage path: ${this.filePath}`);
+    if (this.isReadOnly) {
+      console.log(`File Storage Client initialized in READ-ONLY mode`);
+      console.log(`Storage path: ${this.filePath} (not writable)`);
+      console.log(`Note: Running on read-only filesystem (Vercel). Write operations will be skipped.`);
+    } else {
+      console.log(`File Storage Client initialized`);
+      console.log(`Storage path: ${this.filePath}`);
+    }
   }
 
   /**
@@ -75,6 +94,16 @@ export class FileStorageClient {
    * Read storage data from file
    */
   private readStorage(): StorageData {
+    // If file doesn't exist or we're in read-only mode, return empty data
+    if (!fs.existsSync(this.filePath)) {
+      console.warn('Storage file does not exist. Returning empty data structure.');
+      return {
+        people: {},
+        version: '1.0.0',
+        lastModified: new Date().toISOString()
+      };
+    }
+
     try {
       const data = fs.readFileSync(this.filePath, 'utf-8');
       const parsed = JSON.parse(data);
@@ -128,6 +157,12 @@ export class FileStorageClient {
    * Write storage data to file
    */
   private writeStorage(data: StorageData): void {
+    // Skip writes if in read-only mode
+    if (this.isReadOnly) {
+      console.warn('Cannot write to storage (read-only mode)');
+      return;
+    }
+
     try {
       data.lastModified = new Date().toISOString();
       fs.writeFileSync(
@@ -137,7 +172,9 @@ export class FileStorageClient {
       );
     } catch (error) {
       console.error('Error writing storage:', error);
-      throw error;
+      // Mark as read-only if write fails
+      this.isReadOnly = true;
+      console.warn('Filesystem appears to be read-only. Switching to read-only mode.');
     }
   }
 
@@ -145,6 +182,12 @@ export class FileStorageClient {
    * Store a person's information
    */
   async storePerson(person: Person): Promise<void> {
+    // Skip writes if in read-only mode
+    if (this.isReadOnly) {
+      console.warn(`Cannot store person ${person.name} (read-only mode)`);
+      return;
+    }
+
     try {
       const storage = this.readStorage();
 
@@ -245,6 +288,12 @@ export class FileStorageClient {
    * Delete a person by name
    */
   async deletePerson(name: string): Promise<boolean> {
+    // Skip writes if in read-only mode
+    if (this.isReadOnly) {
+      console.warn(`Cannot delete person ${name} (read-only mode)`);
+      return false;
+    }
+
     try {
       const storage = this.readStorage();
       const key = `person_${name.toLowerCase().replace(/\s+/g, '_')}`;
@@ -268,6 +317,12 @@ export class FileStorageClient {
    * Clear all stored data (use with caution!)
    */
   async clearAll(): Promise<void> {
+    // Skip writes if in read-only mode
+    if (this.isReadOnly) {
+      console.warn('Cannot clear storage (read-only mode)');
+      return;
+    }
+
     try {
       this.initializeStorage();
       console.log('All data cleared from storage');
@@ -323,6 +378,12 @@ export class FileStorageClient {
    * Import storage from JSON string
    */
   importData(jsonData: string): void {
+    // Skip writes if in read-only mode
+    if (this.isReadOnly) {
+      console.warn('Cannot import data (read-only mode)');
+      throw new Error('Cannot import data in read-only mode');
+    }
+
     try {
       const data: StorageData = JSON.parse(jsonData);
 
