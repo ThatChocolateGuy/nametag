@@ -1,9 +1,11 @@
 // Standalone health check endpoint for Vercel
 // This bypasses the Express app and MentraOS auth completely
 
-import { VercelRequest, VercelResponse } from '@vercel/node';
+export default function handler(req: any, res: any) {
+  // Set CORS headers to allow any origin
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Content-Type', 'application/json');
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
   // Simple health check - always returns 200
   res.status(200).json({
     status: 'ok',
