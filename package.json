@@ -37,6 +37,7 @@
     "axios": "^1.7.9",
     "boxen": "5.1.2",
     "chalk": "4.1.2",
+    "colorette": "^2.0.20",
     "dotenv": "^16.4.7",
     "eventsource": "^4.0.0",
     "express": "^4.21.2",
