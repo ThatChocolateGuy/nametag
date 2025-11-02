@@ -53,9 +53,10 @@ try {
 const app = express();
 
 // Health check middleware - bypasses ALL other middleware
-app.use((req, res, next) => {
+app.use((req, res, next): void => {
   if (req.path === '/health') {
-    return res.json({ status: 'ok', storage: storageClient.isReady() });
+    res.json({ status: 'ok', storage: storageClient.isReady() });
+    return;
   }
   next();
 });
@@ -104,13 +105,14 @@ app.get('/api/people', authMiddleware as RequestHandler, async (req: Request, re
  * GET /api/people/:name
  * Get a specific person by name
  */
-app.get('/api/people/:name', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
+app.get('/api/people/:name', authMiddleware as RequestHandler, async (req: Request, res: Response): Promise<void> => {
   try {
     const { name } = req.params;
     const person = await storageClient.findPersonByName(name);
 
     if (!person) {
-      return res.status(404).json({ success: false, error: 'Person not found' });
+      res.status(404).json({ success: false, error: 'Person not found' });
+      return;
     }
 
     res.json({ success: true, person });
@@ -124,13 +126,14 @@ app.get('/api/people/:name', authMiddleware as RequestHandler, async (req: Reque
  * PUT /api/people/:name
  * Update a person's information
  */
-app.put('/api/people/:name', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
+app.put('/api/people/:name', authMiddleware as RequestHandler, async (req: Request, res: Response): Promise<void> => {
   try {
     const { name } = req.params;
     const person = await storageClient.findPersonByName(name);
 
     if (!person) {
-      return res.status(404).json({ success: false, error: 'Person not found' });
+      res.status(404).json({ success: false, error: 'Person not found' });
+      return;
     }
 
     // Update allowed fields
@@ -153,13 +156,14 @@ app.put('/api/people/:name', authMiddleware as RequestHandler, async (req: Reque
  * DELETE /api/people/:name
  * Delete a person
  */
-app.delete('/api/people/:name', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
+app.delete('/api/people/:name', authMiddleware as RequestHandler, async (req: Request, res: Response): Promise<void> => {
   try {
     const { name } = req.params;
     const success = await storageClient.deletePerson(name);
 
     if (!success) {
-      return res.status(404).json({ success: false, error: 'Person not found' });
+      res.status(404).json({ success: false, error: 'Person not found' });
+      return;
     }
 
     res.json({ success: true, message: 'Person deleted' });
@@ -173,19 +177,21 @@ app.delete('/api/people/:name', authMiddleware as RequestHandler, async (req: Re
  * POST /api/people/:name/notes
  * Add a note to a person's conversation history
  */
-app.post('/api/people/:name/notes', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
+app.post('/api/people/:name/notes', authMiddleware as RequestHandler, async (req: Request, res: Response): Promise<void> => {
   try {
     const { name } = req.params;
     const { note } = req.body;
 
     if (!note) {
-      return res.status(400).json({ success: false, error: 'Note is required' });
+      res.status(400).json({ success: false, error: 'Note is required' });
+      return;
     }
 
     const person = await storageClient.findPersonByName(name);
 
     if (!person) {
-      return res.status(404).json({ success: false, error: 'Person not found' });
+      res.status(404).json({ success: false, error: 'Person not found' });
+      return;
     }
 
     // Add note as a new conversation entry
