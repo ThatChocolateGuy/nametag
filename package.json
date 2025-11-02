@@ -9,6 +9,7 @@
     "dev": "bun --hot src/index.ts",
     "web": "bun src/webserver.ts",
     "dev:web": "bun --hot src/webserver.ts",
+    "migrate": "bun scripts/migrate-to-supabase.ts",
     "vercel-build": "echo 'Vercel build complete'",
     "test:deployment": "node test-deployment.js",
     "lint": "npx tsc --noEmit",
@@ -30,6 +31,7 @@
   ],
   "dependencies": {
     "@mentra/sdk": "latest",
+    "@supabase/supabase-js": "^2.78.0",
     "axios": "^1.7.9",
     "boxen": "5.1.2",
     "chalk": "4.1.2",

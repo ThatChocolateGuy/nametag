@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express, { Request, Response, RequestHandler } from 'express';
 import path from 'path';
-import { FileStorageClient, Person } from './services/fileStorageClient';
+import { SupabaseStorageClient, Person } from './services/supabaseStorageClient';
 import { createAuthMiddleware } from '@mentra/sdk';
 
 // Environment variables
@@ -11,7 +11,7 @@ const WEB_PORT = parseInt(process.env.WEB_PORT || '3001');
 const COOKIE_SECRET = process.env.COOKIE_SECRET || 'change-this-secret-in-production';
 
 // Initialize storage client
-const storageClient = new FileStorageClient('./data');
+const storageClient = new SupabaseStorageClient();
 
 // Create Express app
 const app = express();
@@ -177,26 +177,12 @@ app.post('/api/people/:name/notes', authMiddleware as RequestHandler, async (req
  */
 app.get('/api/stats', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
   try {
-    const stats = storageClient.getStats();
-    const people = await storageClient.getAllPeople();
-
-    // Calculate additional stats
-    const totalConversations = people.reduce((sum, p) =>
-      sum + (p.conversationHistory?.length || 0), 0
-    );
-
-    const peopleWithVoices = people.filter(p => p.voiceReference).length;
+    // Use async stats method from SupabaseStorageClient
+    const stats = await storageClient.getStatsAsync();
 
     res.json({
       success: true,
-      stats: {
-        ...stats,
-        totalConversations,
-        peopleWithVoices,
-        averageConversationsPerPerson: people.length > 0
-          ? (totalConversations / people.length).toFixed(1)
-          : 0
-      }
+      stats
     });
   } catch (error) {
     console.error('Error fetching stats:', error);
@@ -210,7 +196,7 @@ app.get('/api/stats', authMiddleware as RequestHandler, async (req: Request, res
  */
 app.get('/api/export', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
   try {
-    const data = storageClient.exportData();
+    const data = await storageClient.exportData();
 
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename="nametag-export-${Date.now()}.json"`);

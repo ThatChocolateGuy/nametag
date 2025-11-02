@@ -478,6 +478,68 @@
   resolved "https://registry.yarnpkg.com/@pinojs/redact/-/redact-0.4.0.tgz#c3de060dd12640dcc838516aa2a6803cc7b2e9d6"
   integrity sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==
 
+"@supabase/auth-js@2.78.0":
+  version "2.78.0"
+  resolved "https://registry.yarnpkg.com/@supabase/auth-js/-/auth-js-2.78.0.tgz#23f9a92347ec0a636b7267d95e997c78cf574464"
+  integrity sha512-cXDtu1U0LeZj/xfnFoV7yCze37TcbNo8FCxy1FpqhMbB9u9QxxDSW6pA5gm/07Ei7m260Lof4CZx67Cu6DPeig==
+  dependencies:
+    "@supabase/node-fetch" "2.6.15"
+    tslib "2.8.1"
+
+"@supabase/functions-js@2.78.0":
+  version "2.78.0"
+  resolved "https://registry.yarnpkg.com/@supabase/functions-js/-/functions-js-2.78.0.tgz#ebb364a7d99d7ed233c553f4c314be00e499653b"
+  integrity sha512-t1jOvArBsOINyqaRee1xJ3gryXLvkBzqnKfi6q3YRzzhJbGS6eXz0pXR5fqmJeB01fLC+1njpf3YhMszdPEF7g==
+  dependencies:
+    "@supabase/node-fetch" "2.6.15"
+    tslib "2.8.1"
+
+"@supabase/node-fetch@2.6.15":
+  version "2.6.15"
+  resolved "https://registry.yarnpkg.com/@supabase/node-fetch/-/node-fetch-2.6.15.tgz#731271430e276983191930816303c44159e7226c"
+  integrity sha512-1ibVeYUacxWYi9i0cf5efil6adJ9WRyZBLivgjs+AUpewx1F3xPi7gLgaASI2SmIQxPoCEjAsLAzKPgMJVgOUQ==
+  dependencies:
+    whatwg-url "^5.0.0"
+
+"@supabase/postgrest-js@2.78.0":
+  version "2.78.0"
+  resolved "https://registry.yarnpkg.com/@supabase/postgrest-js/-/postgrest-js-2.78.0.tgz#45d49799b81d0c2107c1d403f64ad09b06b2aacd"
+  integrity sha512-AwhpYlSvJ+PSnPmIK8sHj7NGDyDENYfQGKrMtpVIEzQA2ApUjgpUGxzXWN4Z0wEtLQsvv7g4y9HVad9Hzo1TNA==
+  dependencies:
+    "@supabase/node-fetch" "2.6.15"
+    tslib "2.8.1"
+
+"@supabase/realtime-js@2.78.0":
+  version "2.78.0"
+  resolved "https://registry.yarnpkg.com/@supabase/realtime-js/-/realtime-js-2.78.0.tgz#4a9e9cffb256fe75076fb6c5e50d367c5f555d62"
+  integrity sha512-rCs1zmLe7of7hj4s7G9z8rTqzWuNVtmwDr3FiCRCJFawEoa+RQO1xpZGbdeuVvVmKDyVN6b542Okci+117y/LQ==
+  dependencies:
+    "@supabase/node-fetch" "2.6.15"
+    "@types/phoenix" "^1.6.6"
+    "@types/ws" "^8.18.1"
+    tslib "2.8.1"
+    ws "^8.18.2"
+
+"@supabase/storage-js@2.78.0":
+  version "2.78.0"
+  resolved "https://registry.yarnpkg.com/@supabase/storage-js/-/storage-js-2.78.0.tgz#3bd60f031a5b7a5e254ed270dce7155671470c48"
+  integrity sha512-n17P0JbjHOlxqJpkaGFOn97i3EusEKPEbWOpuk1r4t00Wg06B8Z4GUiq0O0n1vUpjiMgJUkLIMuBVp+bEgunzQ==
+  dependencies:
+    "@supabase/node-fetch" "2.6.15"
+    tslib "2.8.1"
+
+"@supabase/supabase-js@^2.78.0":
+  version "2.78.0"
+  resolved "https://registry.yarnpkg.com/@supabase/supabase-js/-/supabase-js-2.78.0.tgz#34438769bd1af2d3bac926be24c477c3d700543c"
+  integrity sha512-xYMRNBFmKp2m1gMuwcp/gr/HlfZKqjye1Ib8kJe29XJNsgwsfO/f8skxnWiscFKTlkOKLuBexNgl5L8dzGt6vA==
+  dependencies:
+    "@supabase/auth-js" "2.78.0"
+    "@supabase/functions-js" "2.78.0"
+    "@supabase/node-fetch" "2.6.15"
+    "@supabase/postgrest-js" "2.78.0"
+    "@supabase/realtime-js" "2.78.0"
+    "@supabase/storage-js" "2.78.0"
+
 "@tokenizer/token@^0.3.0":
   version "0.3.0"
   resolved "https://registry.yarnpkg.com/@tokenizer/token/-/token-0.3.0.tgz#fe98a93fe789247e998c75e74e9c7c63217aa276"
@@ -561,6 +623,11 @@
   dependencies:
     undici-types "~6.21.0"
 
+"@types/phoenix@^1.6.6":
+  version "1.6.6"
+  resolved "https://registry.yarnpkg.com/@types/phoenix/-/phoenix-1.6.6.tgz#3c1ab53fd5a23634b8e37ea72ccacbf07fbc7816"
+  integrity sha512-PIzZZlEppgrpoT2QgbnDU+MMzuR6BbCjllj0bM70lWoejMeNJAxCchxnv7J3XFkI8MpygtRpzXrIlmWUBclP5A==
+
 "@types/qs@*":
   version "6.14.0"
   resolved "https://registry.yarnpkg.com/@types/qs/-/qs-6.14.0.tgz#d8b60cecf62f2db0fb68e5e006077b9178b85de5"
@@ -600,7 +667,7 @@
   resolved "https://registry.yarnpkg.com/@types/stack-trace/-/stack-trace-0.0.33.tgz#979a3fde9e721e78603b781e468ef30f0df0f049"
   integrity sha512-O7in6531Bbvlb2KEsJ0dq0CHZvc3iWSR5ZYMtvGgnHA56VgriAN/AU2LorfmcvAl2xc9N5fbCTRyMRRl8nd74g==
 
-"@types/ws@^8.18.0":
+"@types/ws@^8.18.0", "@types/ws@^8.18.1":
   version "8.18.1"
   resolved "https://registry.yarnpkg.com/@types/ws/-/ws-8.18.1.tgz#48464e4bf2ddfd17db13d845467f6070ffea4aa9"
   integrity sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==
@@ -1985,6 +2052,11 @@ tr46@~0.0.3:
   version "0.0.3"
   resolved "https://registry.yarnpkg.com/tr46/-/tr46-0.0.3.tgz#8184fd347dac9cdc185992f3a6622e14b9d9ab6a"
   integrity sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==
+
+tslib@2.8.1:
+  version "2.8.1"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.8.1.tgz#612efe4ed235d567e8aba5f2a5fab70280ade83f"
+  integrity sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==
 
 tsx@^4.19.2:
   version "4.20.6"
