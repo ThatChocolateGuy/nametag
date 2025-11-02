@@ -8,7 +8,7 @@
     "api/index.ts": {
       "memory": 1024,
       "maxDuration": 30,
-      "includeFiles": "node_modules/pino-pretty/**"
+      "includeFiles": "node_modules/{pino-pretty,colorette,dateformat,fast-copy,fast-safe-stringify,help-me,joycon,minimist,on-exit-leak-free,pino-abstract-transport,pump,secure-json-parse,sonic-boom,strip-json-comments,thread-stream}/**"
     }
   },
   "rewrites": [
