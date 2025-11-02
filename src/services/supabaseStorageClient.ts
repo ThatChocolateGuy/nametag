@@ -60,6 +60,13 @@ export class SupabaseStorageClient {
       throw new Error('Supabase credentials not configured');
     }
 
+    // Handle self-signed certificates (corporate proxies, VPNs, antivirus software)
+    // This is often needed in development environments
+    if (process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '1') {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      console.log('⚠️  SSL certificate validation disabled (development mode)');
+    }
+
     // Initialize Supabase client with service role key
     this.supabase = createClient(supabaseUrl, supabaseKey, {
       auth: {
