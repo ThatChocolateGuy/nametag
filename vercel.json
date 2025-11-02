@@ -4,6 +4,11 @@
     "api/health.ts": {
       "memory": 128,
       "maxDuration": 10
+    },
+    "api/index.ts": {
+      "memory": 1024,
+      "maxDuration": 30,
+      "includeFiles": "node_modules/pino-pretty/**"
     }
   },
   "rewrites": [
