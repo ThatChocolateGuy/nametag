@@ -8,9 +8,9 @@ import path from 'path';
 import { SupabaseStorageClient, Person } from './services/supabaseStorageClient';
 import { createAuthMiddleware } from '@mentra/sdk';
 
-// Environment variables - use defaults for graceful degradation
-const MENTRAOS_API_KEY = process.env.MENTRAOS_API_KEY || '';
-const PACKAGE_NAME = process.env.PACKAGE_NAME || '';
+// Environment variables - validate they exist
+const MENTRAOS_API_KEY = process.env.MENTRAOS_API_KEY;
+const PACKAGE_NAME = process.env.PACKAGE_NAME;
 const WEB_PORT = parseInt(process.env.WEB_PORT || '3001');
 const COOKIE_SECRET = process.env.COOKIE_SECRET || 'change-this-secret-in-production';
 
@@ -28,6 +28,17 @@ try {
   // Don't throw - allow module to load so we can return proper error responses
 }
 
+// Check for auth configuration
+let authInitError: string | null = null;
+if (!MENTRAOS_API_KEY || !PACKAGE_NAME) {
+  const missing = [];
+  if (!MENTRAOS_API_KEY) missing.push('MENTRAOS_API_KEY');
+  if (!PACKAGE_NAME) missing.push('PACKAGE_NAME');
+  authInitError = `Missing required environment variables: ${missing.join(', ')}`;
+  console.error('⚠️', authInitError);
+  console.error('⚠️ Authentication will be disabled - all API routes will return 503');
+}
+
 // Create Express app
 const app = express();
 
@@ -36,8 +47,11 @@ app.use((req, res, next): void => {
   if (req.path === '/health') {
     res.json({
       status: 'ok',
+      timestamp: new Date().toISOString(),
       storage: storageClient ? storageClient.isReady() : false,
-      storageError: storageInitError ? storageInitError.message : null
+      storageError: storageInitError ? storageInitError.message : null,
+      auth: !authInitError,
+      authError: authInitError
     });
     return;
   }
@@ -48,17 +62,30 @@ app.use((req, res, next): void => {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-// MentraOS authentication middleware
-const authMiddleware = createAuthMiddleware({
-  apiKey: MENTRAOS_API_KEY,
-  packageName: PACKAGE_NAME,
-  cookieSecret: COOKIE_SECRET,
-  cookieOptions: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-  }
-});
+// MentraOS authentication middleware (only if credentials are available)
+let authMiddleware: RequestHandler;
+
+if (MENTRAOS_API_KEY && PACKAGE_NAME) {
+  authMiddleware = createAuthMiddleware({
+    apiKey: MENTRAOS_API_KEY,
+    packageName: PACKAGE_NAME,
+    cookieSecret: COOKIE_SECRET,
+    cookieOptions: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    }
+  }) as RequestHandler;
+} else {
+  // No-op middleware when auth is not configured
+  authMiddleware = ((req, res, next): void => {
+    res.status(503).json({
+      success: false,
+      error: 'Authentication service unavailable',
+      details: authInitError
+    });
+  }) as RequestHandler;
+}
 
 // Storage availability middleware for API routes
 const requireStorage: RequestHandler = (req, res, next): void => {
