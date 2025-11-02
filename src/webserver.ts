@@ -1,52 +1,31 @@
-import 'dotenv/config';
+// Load dotenv only in local development (not on Vercel)
+if (process.env.VERCEL !== '1') {
+  require('dotenv/config');
+}
+
 import express, { Request, Response, RequestHandler } from 'express';
 import path from 'path';
 import { SupabaseStorageClient, Person } from './services/supabaseStorageClient';
 import { createAuthMiddleware } from '@mentra/sdk';
 
-// Environment variables validation
-function validateEnvironment() {
-  const requiredVars = [
-    'MENTRAOS_API_KEY',
-    'PACKAGE_NAME',
-    'SUPABASE_URL',
-    'SUPABASE_SERVICE_KEY'
-  ];
-
-  const missing = requiredVars.filter(varName => !process.env[varName]);
-
-  if (missing.length > 0) {
-    console.error('╔════════════════════════════════════════════════════════════════╗');
-    console.error('║          CONFIGURATION ERROR                                   ║');
-    console.error('╚════════════════════════════════════════════════════════════════╝');
-    console.error('');
-    console.error(`❌ Missing required environment variables: ${missing.join(', ')}`);
-    console.error('');
-    console.error('Please ensure all required variables are set in your .env file');
-    console.error('or in your Vercel environment variables.');
-    console.error('');
-    console.error('See .env.example for the complete list of required variables.');
-    console.error('════════════════════════════════════════════════════════════════');
-
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
-  }
-}
-
-// Validate environment before proceeding
-validateEnvironment();
-
-const MENTRAOS_API_KEY = process.env.MENTRAOS_API_KEY!;
-const PACKAGE_NAME = process.env.PACKAGE_NAME!;
+// Environment variables - use defaults for graceful degradation
+const MENTRAOS_API_KEY = process.env.MENTRAOS_API_KEY || '';
+const PACKAGE_NAME = process.env.PACKAGE_NAME || '';
 const WEB_PORT = parseInt(process.env.WEB_PORT || '3001');
 const COOKIE_SECRET = process.env.COOKIE_SECRET || 'change-this-secret-in-production';
 
-// Initialize storage client with error handling
-let storageClient: SupabaseStorageClient;
+// Initialize storage client with graceful error handling
+let storageClient: SupabaseStorageClient | null = null;
+let storageInitError: Error | null = null;
+
 try {
   storageClient = new SupabaseStorageClient();
+  console.log('✓ Supabase storage client initialized successfully');
 } catch (error) {
-  console.error('Failed to initialize Supabase storage client:', error);
-  throw error;
+  storageInitError = error as Error;
+  console.error('⚠️ Failed to initialize Supabase storage client:', error);
+  console.error('⚠️ API endpoints will return 503 Service Unavailable');
+  // Don't throw - allow module to load so we can return proper error responses
 }
 
 // Create Express app
@@ -55,7 +34,11 @@ const app = express();
 // Health check middleware - bypasses ALL other middleware
 app.use((req, res, next): void => {
   if (req.path === '/health') {
-    res.json({ status: 'ok', storage: storageClient.isReady() });
+    res.json({
+      status: 'ok',
+      storage: storageClient ? storageClient.isReady() : false,
+      storageError: storageInitError ? storageInitError.message : null
+    });
     return;
   }
   next();
@@ -77,15 +60,28 @@ const authMiddleware = createAuthMiddleware({
   }
 });
 
+// Storage availability middleware for API routes
+const requireStorage: RequestHandler = (req, res, next): void => {
+  if (!storageClient || storageInitError) {
+    res.status(503).json({
+      success: false,
+      error: 'Storage service unavailable',
+      details: storageInitError?.message
+    });
+    return;
+  }
+  next();
+};
+
 // API Routes
 
 /**
  * GET /api/people
  * Get all stored people
  */
-app.get('/api/people', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
+app.get('/api/people', authMiddleware as RequestHandler, requireStorage, async (req: Request, res: Response) => {
   try {
-    const people = await storageClient.getAllPeople();
+    const people = await storageClient!.getAllPeople();
 
     // Sort by most recent conversation
     const sorted = people.sort((a, b) => {
@@ -105,10 +101,10 @@ app.get('/api/people', authMiddleware as RequestHandler, async (req: Request, re
  * GET /api/people/:name
  * Get a specific person by name
  */
-app.get('/api/people/:name', authMiddleware as RequestHandler, async (req: Request, res: Response): Promise<void> => {
+app.get('/api/people/:name', authMiddleware as RequestHandler, requireStorage, async (req: Request, res: Response): Promise<void> => {
   try {
     const { name } = req.params;
-    const person = await storageClient.findPersonByName(name);
+    const person = await storageClient!.findPersonByName(name);
 
     if (!person) {
       res.status(404).json({ success: false, error: 'Person not found' });
@@ -126,10 +122,10 @@ app.get('/api/people/:name', authMiddleware as RequestHandler, async (req: Reque
  * PUT /api/people/:name
  * Update a person's information
  */
-app.put('/api/people/:name', authMiddleware as RequestHandler, async (req: Request, res: Response): Promise<void> => {
+app.put('/api/people/:name', authMiddleware as RequestHandler, requireStorage, async (req: Request, res: Response): Promise<void> => {
   try {
     const { name } = req.params;
-    const person = await storageClient.findPersonByName(name);
+    const person = await storageClient!.findPersonByName(name);
 
     if (!person) {
       res.status(404).json({ success: false, error: 'Person not found' });
@@ -143,7 +139,7 @@ app.put('/api/people/:name', authMiddleware as RequestHandler, async (req: Reque
     // Merge updates
     const updated: Person = { ...person, ...updates };
 
-    await storageClient.storePerson(updated);
+    await storageClient!.storePerson(updated);
 
     res.json({ success: true, person: updated });
   } catch (error) {
@@ -156,10 +152,10 @@ app.put('/api/people/:name', authMiddleware as RequestHandler, async (req: Reque
  * DELETE /api/people/:name
  * Delete a person
  */
-app.delete('/api/people/:name', authMiddleware as RequestHandler, async (req: Request, res: Response): Promise<void> => {
+app.delete('/api/people/:name', authMiddleware as RequestHandler, requireStorage, async (req: Request, res: Response): Promise<void> => {
   try {
     const { name } = req.params;
-    const success = await storageClient.deletePerson(name);
+    const success = await storageClient!.deletePerson(name);
 
     if (!success) {
       res.status(404).json({ success: false, error: 'Person not found' });
@@ -177,7 +173,7 @@ app.delete('/api/people/:name', authMiddleware as RequestHandler, async (req: Re
  * POST /api/people/:name/notes
  * Add a note to a person's conversation history
  */
-app.post('/api/people/:name/notes', authMiddleware as RequestHandler, async (req: Request, res: Response): Promise<void> => {
+app.post('/api/people/:name/notes', authMiddleware as RequestHandler, requireStorage, async (req: Request, res: Response): Promise<void> => {
   try {
     const { name } = req.params;
     const { note } = req.body;
@@ -187,7 +183,7 @@ app.post('/api/people/:name/notes', authMiddleware as RequestHandler, async (req
       return;
     }
 
-    const person = await storageClient.findPersonByName(name);
+    const person = await storageClient!.findPersonByName(name);
 
     if (!person) {
       res.status(404).json({ success: false, error: 'Person not found' });
@@ -204,7 +200,7 @@ app.post('/api/people/:name/notes', authMiddleware as RequestHandler, async (req
 
     person.lastMet = new Date();
 
-    await storageClient.storePerson(person);
+    await storageClient!.storePerson(person);
 
     res.json({ success: true, person });
   } catch (error) {
@@ -217,10 +213,10 @@ app.post('/api/people/:name/notes', authMiddleware as RequestHandler, async (req
  * GET /api/stats
  * Get storage statistics
  */
-app.get('/api/stats', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
+app.get('/api/stats', authMiddleware as RequestHandler, requireStorage, async (req: Request, res: Response) => {
   try {
     // Use async stats method from SupabaseStorageClient
-    const stats = await storageClient.getStatsAsync();
+    const stats = await storageClient!.getStatsAsync();
 
     res.json({
       success: true,
@@ -236,9 +232,9 @@ app.get('/api/stats', authMiddleware as RequestHandler, async (req: Request, res
  * GET /api/export
  * Export all data as JSON
  */
-app.get('/api/export', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
+app.get('/api/export', authMiddleware as RequestHandler, requireStorage, async (req: Request, res: Response) => {
   try {
-    const data = await storageClient.exportData();
+    const data = await storageClient!.exportData();
 
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename="nametag-export-${Date.now()}.json"`);

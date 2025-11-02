@@ -91,11 +91,12 @@ export class SupabaseStorageClient {
       throw new Error(`Supabase credentials not configured. Missing: ${missingVars.join(', ')}`);
     }
 
-    // Handle self-signed certificates (corporate proxies, VPNs, antivirus software)
-    // This is often needed in development environments
-    if (process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '1') {
+    // Handle self-signed certificates ONLY in local development
+    // (corporate proxies, VPNs, antivirus software)
+    // NEVER disable SSL validation in production (Vercel)
+    if (process.env.VERCEL !== '1' && process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '1') {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-      console.log('⚠️  SSL certificate validation disabled (development mode)');
+      console.log('⚠️  SSL certificate validation disabled (local development mode only)');
     }
 
     // Initialize Supabase client with service role key
