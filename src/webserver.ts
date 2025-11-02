@@ -4,14 +4,50 @@ import path from 'path';
 import { SupabaseStorageClient, Person } from './services/supabaseStorageClient';
 import { createAuthMiddleware } from '@mentra/sdk';
 
-// Environment variables
-const MENTRAOS_API_KEY = process.env.MENTRAOS_API_KEY ?? (() => { throw new Error('MENTRAOS_API_KEY is not set'); })();
-const PACKAGE_NAME = process.env.PACKAGE_NAME ?? (() => { throw new Error('PACKAGE_NAME is not set'); })();
+// Environment variables validation
+function validateEnvironment() {
+  const requiredVars = [
+    'MENTRAOS_API_KEY',
+    'PACKAGE_NAME',
+    'SUPABASE_URL',
+    'SUPABASE_SERVICE_KEY'
+  ];
+
+  const missing = requiredVars.filter(varName => !process.env[varName]);
+
+  if (missing.length > 0) {
+    console.error('╔════════════════════════════════════════════════════════════════╗');
+    console.error('║          CONFIGURATION ERROR                                   ║');
+    console.error('╚════════════════════════════════════════════════════════════════╝');
+    console.error('');
+    console.error(`❌ Missing required environment variables: ${missing.join(', ')}`);
+    console.error('');
+    console.error('Please ensure all required variables are set in your .env file');
+    console.error('or in your Vercel environment variables.');
+    console.error('');
+    console.error('See .env.example for the complete list of required variables.');
+    console.error('════════════════════════════════════════════════════════════════');
+
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+}
+
+// Validate environment before proceeding
+validateEnvironment();
+
+const MENTRAOS_API_KEY = process.env.MENTRAOS_API_KEY!;
+const PACKAGE_NAME = process.env.PACKAGE_NAME!;
 const WEB_PORT = parseInt(process.env.WEB_PORT || '3001');
 const COOKIE_SECRET = process.env.COOKIE_SECRET || 'change-this-secret-in-production';
 
-// Initialize storage client
-const storageClient = new SupabaseStorageClient();
+// Initialize storage client with error handling
+let storageClient: SupabaseStorageClient;
+try {
+  storageClient = new SupabaseStorageClient();
+} catch (error) {
+  console.error('Failed to initialize Supabase storage client:', error);
+  throw error;
+}
 
 // Create Express app
 const app = express();

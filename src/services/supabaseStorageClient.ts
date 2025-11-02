@@ -56,8 +56,39 @@ export class SupabaseStorageClient {
     const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
-      console.error('Missing Supabase credentials. Set SUPABASE_URL and SUPABASE_SERVICE_KEY environment variables.');
-      throw new Error('Supabase credentials not configured');
+      const missingVars = [];
+      if (!supabaseUrl) missingVars.push('SUPABASE_URL');
+      if (!supabaseKey) missingVars.push('SUPABASE_SERVICE_KEY');
+
+      console.error('╔════════════════════════════════════════════════════════════════╗');
+      console.error('║          SUPABASE CONFIGURATION ERROR                          ║');
+      console.error('╚════════════════════════════════════════════════════════════════╝');
+      console.error('');
+      console.error(`❌ Missing required environment variables: ${missingVars.join(', ')}`);
+      console.error('');
+      console.error('To fix this issue:');
+      console.error('');
+      console.error('LOCAL DEVELOPMENT:');
+      console.error('  1. Copy .env.example to .env');
+      console.error('  2. Add your Supabase credentials from:');
+      console.error('     https://supabase.com/dashboard → Your Project → Settings → API');
+      console.error('  3. Set SUPABASE_URL and SUPABASE_SERVICE_KEY in .env');
+      console.error('');
+      console.error('VERCEL DEPLOYMENT:');
+      console.error('  Option 1 - Using Vercel Dashboard:');
+      console.error('    1. Go to https://vercel.com/dashboard');
+      console.error('    2. Select your project → Settings → Environment Variables');
+      console.error('    3. Add SUPABASE_URL and SUPABASE_SERVICE_KEY');
+      console.error('    4. Redeploy your application');
+      console.error('');
+      console.error('  Option 2 - Using Vercel CLI:');
+      console.error('    1. Install: npm install -g vercel');
+      console.error('    2. Run: npm run setup:vercel-env');
+      console.error('    3. Redeploy: vercel --prod');
+      console.error('');
+      console.error('════════════════════════════════════════════════════════════════');
+
+      throw new Error(`Supabase credentials not configured. Missing: ${missingVars.join(', ')}`);
     }
 
     // Handle self-signed certificates (corporate proxies, VPNs, antivirus software)

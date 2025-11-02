@@ -11,6 +11,8 @@
     "dev:web": "bun --hot src/webserver.ts",
     "migrate": "bun scripts/migrate-to-supabase.ts",
     "vercel-build": "echo 'Vercel build complete'",
+    "setup:vercel-env": "powershell -ExecutionPolicy Bypass -File scripts/setup-vercel-env.ps1",
+    "setup:vercel-env:bash": "bash scripts/setup-vercel-env.sh",
     "test:deployment": "node test-deployment.js",
     "lint": "npx tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"
