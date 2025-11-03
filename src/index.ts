@@ -4,7 +4,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 import 'dotenv/config';
 import { AppServer, AppSession, ViewType, StreamType } from '@mentra/sdk';
-import { FileStorageClient } from './services/fileStorageClient';
+import { SupabaseStorageClient } from './services/supabaseStorageClient';
 import { NameExtractionService } from './services/nameExtractionService';
 import { ConversationManager } from './services/conversationManager';
 import { OpenAITranscriptionService, TranscriptionSegment } from './services/openaiTranscriptionService';
@@ -17,7 +17,7 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 const PORT = parseInt(process.env.PORT || '3000');
 
 class MemoryGlassesApp extends AppServer {
-  private memoryClient: FileStorageClient;
+  private memoryClient: SupabaseStorageClient;
   private nameExtractor: NameExtractionService;
   private transcriptionService: OpenAITranscriptionService;
   private conversationManager?: ConversationManager;
@@ -34,7 +34,7 @@ class MemoryGlassesApp extends AppServer {
     });
 
     // Initialize services
-    this.memoryClient = new FileStorageClient('./data');
+    this.memoryClient = new SupabaseStorageClient();
     this.nameExtractor = new NameExtractionService(OPENAI_API_KEY, OPENAI_MODEL);
     this.transcriptionService = new OpenAITranscriptionService(OPENAI_API_KEY);
 
@@ -42,7 +42,7 @@ class MemoryGlassesApp extends AppServer {
     console.log('║        Nametag v2.0 - G1 Glasses        ║');
     console.log('╚═════════════════════════════════════════╝\n');
     console.log('Services ready:');
-    console.log('- File Storage Client (./data/memories.json)');
+    console.log('- Supabase Storage Client (PostgreSQL)');
     console.log(`- Name Extraction (OpenAI ${OPENAI_MODEL})`);
     console.log('- Voice Recognition (OpenAI gpt-4o-transcribe-diarize)');
   }
