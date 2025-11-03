@@ -121,7 +121,7 @@ export class SupabaseStorageClient {
       .from('conversation_entries')
       .select('*')
       .eq('person_id', dbPerson.id)
-      .order('date', { ascending: false });
+      .order('date', { ascending: true });
 
     if (error) {
       console.error('Error fetching conversations:', error);
@@ -141,9 +141,9 @@ export class SupabaseStorageClient {
       voiceReference: dbPerson.voice_reference,
       conversationHistory,
       lastMet: dbPerson.last_met ? new Date(dbPerson.last_met) : undefined,
-      // Deprecated fields for backward compatibility
-      lastConversation: conversationHistory[0]?.transcript,
-      lastTopics: conversationHistory[0]?.topics
+      // Deprecated fields for backward compatibility - get most recent conversation
+      lastConversation: conversationHistory[conversationHistory.length - 1]?.transcript,
+      lastTopics: conversationHistory[conversationHistory.length - 1]?.topics
     };
   }
 
