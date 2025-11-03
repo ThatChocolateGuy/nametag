@@ -116,12 +116,12 @@ export class SupabaseStorageClient {
    * Convert database person + conversations to Person interface
    */
   private async dbPersonToPerson(dbPerson: DatabasePerson): Promise<Person> {
-    // Fetch conversation history for this person
+    // Fetch conversation history for this person (oldest first for array indexing)
     const { data: conversations, error } = await this.supabase
       .from('conversation_entries')
       .select('*')
       .eq('person_id', dbPerson.id)
-      .order('date', { ascending: true });
+      .order('date', { ascending: true });  // Oldest first, so newest is at end of array
 
     if (error) {
       console.error('Error fetching conversations:', error);
