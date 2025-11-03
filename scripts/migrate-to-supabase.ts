@@ -28,9 +28,9 @@ interface StorageData {
 }
 
 async function main() {
-  console.log('╔══════════════════════════════════════════════════╗');
+  console.log('╔═════════════════════════════════════════════════╗');
   console.log('║   Nametag: File Storage → Supabase Migration    ║');
-  console.log('╚══════════════════════════════════════════════════╝\n');
+  console.log('╚═════════════════════════════════════════════════╝\n');
 
   // Check if data file exists
   if (!fs.existsSync(DATA_FILE)) {
