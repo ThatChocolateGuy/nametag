@@ -206,7 +206,7 @@ class MemoryGlassesApp extends AppServer {
 
           // Use horizontal scrolling for long lines
           const message = lines.join('\n');
-          this.startScrollingText(session, message, 8000);
+          const displayDuration = this.startScrollingText(session, message, 8000);
 
           console.log(`\n✓ Recognized returning person: ${person.name}`);
           if (person.conversationHistory && person.conversationHistory.length > 0) {
@@ -219,13 +219,13 @@ class MemoryGlassesApp extends AppServer {
             console.log(`  Previous topics: ${person.lastTopics.join(', ')}`);
           }
 
-          // Resume listening indicator after showing person info
+          // Resume listening indicator after showing person info (add 500ms buffer)
           this.indicatorRestartTimeout = setTimeout(() => {
             if (this.sessionActive && this.currentSession) {
               this.startListeningIndicator(this.currentSession);
             }
             this.indicatorRestartTimeout = undefined;
-          }, 8500);
+          }, displayDuration + 500);
         }
 
         // Handle new person identified
@@ -244,23 +244,23 @@ class MemoryGlassesApp extends AppServer {
           const message = `Nice to meet you,\n${person.name}!`;
 
           // Use scrolling for long names
-          this.startScrollingText(session, message, 3000);
+          const displayDuration = this.startScrollingText(session, message, 3000);
 
           console.log(`\n✓ New person identified: ${person.name}`);
-          
+
           // Update transcription service with new person's voice profile
           if (person.voiceReference) {
             const updatedPeople = await this.memoryClient.getAllPeople();
             this.transcriptionService.updateKnownPeople(updatedPeople);
           }
 
-          // Resume listening indicator
+          // Resume listening indicator (add 500ms buffer)
           this.indicatorRestartTimeout = setTimeout(() => {
             if (this.sessionActive && this.currentSession) {
               this.startListeningIndicator(this.currentSession);
             }
             this.indicatorRestartTimeout = undefined;
-          }, 3500);
+          }, displayDuration + 500);
         }
       }
     );
@@ -374,13 +374,15 @@ class MemoryGlassesApp extends AppServer {
   /**
    * Start horizontal scrolling text display
    * Scrolls long lines that would otherwise be truncated
+   * Duration is automatically calculated based on text length
+   * @returns The actual duration in milliseconds that the text will display
    */
   private startScrollingText(
     session: AppSession,
     fullText: string,
-    durationMs: number = 8000,
+    minDurationMs: number = 5000,
     lineWidth: number = 28
-  ): void {
+  ): number {
     // Stop any existing scrolling
     this.stopScrollingText();
 
@@ -394,15 +396,11 @@ class MemoryGlassesApp extends AppServer {
       // No scrolling needed, just show the text normally
       session.layouts.showTextWall(fullText, {
         view: ViewType.MAIN,
-        durationMs
+        durationMs: minDurationMs
       });
-      return;
+      return minDurationMs;
     }
 
-    console.log(`✓ Starting horizontal scroll (${durationMs}ms duration)`);
-
-    let scrollPosition = 0;
-    let pauseFrames = 0;
     const pauseAtStart = 6; // Pause 3 seconds at start (500ms * 6 frames)
     const pauseAtEnd = 4; // Pause 2 seconds at end (500ms * 4 frames)
     const scrollSpeed = 500; // Update every 500ms (smooth and battery-friendly)
@@ -411,6 +409,18 @@ class MemoryGlassesApp extends AppServer {
     const maxScrollPosition = Math.max(...lines.map(line =>
       Math.max(0, line.length - lineWidth)
     ));
+
+    // Calculate required duration: pause + scroll + pause
+    // Each frame is scrollSpeed ms
+    const calculatedDuration = (pauseAtStart + maxScrollPosition + pauseAtEnd) * scrollSpeed;
+
+    // Use the calculated duration, but enforce a reasonable maximum (20 seconds)
+    const durationMs = Math.min(calculatedDuration, 20000);
+
+    console.log(`✓ Starting horizontal scroll (${(durationMs / 1000).toFixed(1)}s for ${maxScrollPosition} chars)`);
+
+    let scrollPosition = 0;
+    let pauseFrames = 0;
 
     const scrollInterval = setInterval(() => {
       if (!this.sessionActive || !this.currentSession) {
@@ -480,6 +490,8 @@ class MemoryGlassesApp extends AppServer {
     setTimeout(() => {
       this.stopScrollingText();
     }, durationMs);
+
+    return durationMs;
   }
 
   /**
