@@ -93,10 +93,13 @@ export class SupabaseStorageClient {
 
     // Handle self-signed certificates ONLY in local development
     // (corporate proxies, VPNs, antivirus software)
-    // NEVER disable SSL validation in production (Vercel)
-    if (process.env.VERCEL !== '1' && process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '1') {
+    // NEVER disable SSL validation in production (Railway, Vercel)
+    if (process.env.NODE_ENV !== 'production' &&
+        !process.env.RAILWAY_ENVIRONMENT &&
+        process.env.VERCEL !== '1' &&
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '1') {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-      console.log('⚠️  SSL certificate validation disabled (local development mode only)');
+      console.log('⚠️  SSL certificate validation disabled (local development only)');
     }
 
     // Initialize Supabase client with service role key

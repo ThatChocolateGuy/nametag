@@ -1,8 +1,14 @@
-// DEVELOPMENT ONLY - Bypass SSL certificate validation for corporate networks
-// WARNING: Remove this in production!
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-
 import 'dotenv/config';
+
+// Only bypass SSL certificate validation in LOCAL development
+// (for corporate networks, VPNs, antivirus proxies)
+// NEVER in production environments (Railway, Vercel)
+if (process.env.NODE_ENV !== 'production' &&
+    !process.env.RAILWAY_ENVIRONMENT &&
+    process.env.VERCEL !== '1') {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+  console.log('⚠️  SSL certificate validation disabled (local development only)');
+}
 import { AppServer, AppSession, ViewType, StreamType } from '@mentra/sdk';
 import { SupabaseStorageClient } from './services/supabaseStorageClient';
 import { NameExtractionService } from './services/nameExtractionService';
