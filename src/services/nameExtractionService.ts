@@ -104,6 +104,11 @@ Return ONLY a JSON object with this format:
   "summary": "Brief 1-2 sentence summary"
 }
 
+IMPORTANT: Write ALL content in PAST TENSE as if recalling what was discussed.
+Examples:
+- Good: "Discussed project timeline", "Talked about weekend plans", "Mentioned new job"
+- Bad: "Discussing project timeline", "Talking about weekend plans", "Mentions new job"
+
 Focus on the most important information that would help someone remember this conversation later.
 Return ONLY valid JSON, no explanation.`
         }]
