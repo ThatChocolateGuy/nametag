@@ -29,6 +29,7 @@ class MemoryGlassesApp extends AppServer {
   private conversationManager?: ConversationManager;
   private sessionActive = false;
   private listeningIndicatorInterval?: NodeJS.Timeout;
+  private scrollingTextInterval?: NodeJS.Timeout;
   private currentSession?: AppSession;
   private indicatorRestartTimeout?: NodeJS.Timeout;
 
@@ -127,18 +128,16 @@ class MemoryGlassesApp extends AppServer {
             this.indicatorRestartTimeout = undefined;
           }
           
-          // G1 display constraints: ~250 chars, 6-8 lines, 25-30 chars/line
-          const MAX_CHARS = 240;
-          const MAX_POINT_LENGTH = 38; // Slightly over line width to allow wrapping
-          
+          // Build display text with full content (no truncation)
+          // The scrolling function will handle long lines automatically
           let lines: string[] = [];
-          
+
           // Line 1: Name + Time + Conversation Count (all on one line)
           let headerLine = person.name;
-          
+
           let lastMetDate: Date | null = null;
           let conversationCount = 0;
-          
+
           if (person.conversationHistory && person.conversationHistory.length > 0) {
             lastMetDate = person.conversationHistory[person.conversationHistory.length - 1].date;
             conversationCount = person.conversationHistory.length;
@@ -146,94 +145,68 @@ class MemoryGlassesApp extends AppServer {
             lastMetDate = person.lastMet;
             conversationCount = 1;
           }
-          
+
           if (lastMetDate) {
             const date = new Date(lastMetDate);
             const now = new Date();
             const diffTime = Math.abs(now.getTime() - date.getTime());
             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            
+
             let timeStr = '';
             if (diffDays === 0) timeStr = 'today';
             else if (diffDays === 1) timeStr = 'yesterday';
             else if (diffDays < 7) timeStr = `${diffDays}d ago`;
             else if (diffDays < 30) timeStr = `${Math.floor(diffDays / 7)}w ago`;
             else timeStr = `${Math.floor(diffDays / 30)}mo ago`;
-            
+
             const countStr = conversationCount > 1 ? ` • ${conversationCount}x` : '';
             headerLine += ` • ${timeStr}${countStr}`;
           }
-          
+
           lines.push(headerLine);
-          
-          // Lines 2+: Context from last conversation
+
+          // Lines 2+: Context from last conversation (no truncation - scrolling will handle it)
           if (person.conversationHistory && person.conversationHistory.length > 0) {
             const lastConv = person.conversationHistory[person.conversationHistory.length - 1];
-            
+
             // Prioritize key points for quick, actionable context
             if (lastConv.keyPoints && lastConv.keyPoints.length > 0) {
-              // Take up to 3 key points that fit within char limit
-              const points = lastConv.keyPoints
-                .slice(0, 3)
-                .map((point: string) => {
-                  // Truncate long points to fit display
-                  return point.length > MAX_POINT_LENGTH 
-                    ? point.substring(0, MAX_POINT_LENGTH - 1) + '…'
-                    : point;
-                });
-              
+              // Take up to 3 key points (full text, no truncation)
+              const points = lastConv.keyPoints.slice(0, 3);
+
               lines.push(''); // Blank line
               points.forEach((point: string) => lines.push(`• ${point}`));
-              
+
             } else if (lastConv.transcript && lastConv.transcript !== 'Error generating summary') {
-              // Fallback to summary - truncate to fit
+              // Fallback to summary (full text)
               lines.push('');
-              const summary = lastConv.transcript.length > 120 
-                ? lastConv.transcript.substring(0, 119) + '…'
-                : lastConv.transcript;
-              lines.push(summary);
-              
+              lines.push(lastConv.transcript);
+
             } else if (lastConv.topics && lastConv.topics.length > 0) {
-              // Fallback to topics
+              // Fallback to topics (full text)
               lines.push('');
               lastConv.topics.slice(0, 2).forEach((topic: string) => {
-                const topicStr = topic.length > MAX_POINT_LENGTH 
-                  ? topic.substring(0, MAX_POINT_LENGTH - 1) + '…'
-                  : topic;
-                lines.push(`• ${topicStr}`);
+                lines.push(`• ${topic}`);
               });
             }
           } else if (person.lastConversation) {
-            // Backward compatibility
+            // Backward compatibility (full text)
             lines.push('');
-            const summary = person.lastConversation.length > 120 
-              ? person.lastConversation.substring(0, 119) + '…'
-              : person.lastConversation;
-            lines.push(summary);
+            lines.push(person.lastConversation);
           } else if (person.lastTopics && person.lastTopics.length > 0) {
-            // Backward compatibility
+            // Backward compatibility (full text)
             lines.push('');
             person.lastTopics.slice(0, 2).forEach((topic: string) => {
-              const topicStr = topic.length > MAX_POINT_LENGTH 
-                ? topic.substring(0, MAX_POINT_LENGTH - 1) + '…'
-                  : topic;
-              lines.push(`• ${topicStr}`);
+              lines.push(`• ${topic}`);
             });
           } else {
             lines.push('');
             lines.push('First conversation!');
           }
-          
-          // Join lines and ensure within character limit
-          let message = lines.join('\n');
-          if (message.length > MAX_CHARS) {
-            message = message.substring(0, MAX_CHARS - 1) + '…';
-          }
 
-          session.layouts.showTextWall(message, {
-            view: ViewType.MAIN,
-            durationMs: 8000
-          });
+          // Use horizontal scrolling for long lines
+          const message = lines.join('\n');
+          this.startScrollingText(session, message, 8000);
 
           console.log(`\n✓ Recognized returning person: ${person.name}`);
           if (person.conversationHistory && person.conversationHistory.length > 0) {
@@ -270,10 +243,8 @@ class MemoryGlassesApp extends AppServer {
           
           const message = `Nice to meet you,\n${person.name}!`;
 
-          session.layouts.showTextWall(message, {
-            view: ViewType.MAIN,
-            durationMs: 3000
-          });
+          // Use scrolling for long names
+          this.startScrollingText(session, message, 3000);
 
           console.log(`\n✓ New person identified: ${person.name}`);
           
@@ -312,7 +283,8 @@ class MemoryGlassesApp extends AppServer {
       console.log('Reason:', reason);
       this.sessionActive = false;
       this.stopListeningIndicator();
-      
+      this.stopScrollingText();
+
       // Cancel any pending indicator restart
       if (this.indicatorRestartTimeout) {
         clearTimeout(this.indicatorRestartTimeout);
@@ -396,6 +368,128 @@ class MemoryGlassesApp extends AppServer {
       clearInterval(this.listeningIndicatorInterval);
       this.listeningIndicatorInterval = undefined;
       console.log('✓ Listening indicator stopped');
+    }
+  }
+
+  /**
+   * Start horizontal scrolling text display
+   * Scrolls long lines that would otherwise be truncated
+   */
+  private startScrollingText(
+    session: AppSession,
+    fullText: string,
+    durationMs: number = 8000,
+    lineWidth: number = 28
+  ): void {
+    // Stop any existing scrolling
+    this.stopScrollingText();
+
+    // Split text into lines
+    const lines = fullText.split('\n');
+
+    // Check if any lines need scrolling
+    const needsScrolling = lines.some(line => line.length > lineWidth);
+
+    if (!needsScrolling) {
+      // No scrolling needed, just show the text normally
+      session.layouts.showTextWall(fullText, {
+        view: ViewType.MAIN,
+        durationMs
+      });
+      return;
+    }
+
+    console.log(`✓ Starting horizontal scroll (${durationMs}ms duration)`);
+
+    let scrollPosition = 0;
+    let pauseFrames = 0;
+    const pauseAtStart = 6; // Pause 3 seconds at start (500ms * 6 frames)
+    const pauseAtEnd = 4; // Pause 2 seconds at end (500ms * 4 frames)
+    const scrollSpeed = 500; // Update every 500ms (smooth and battery-friendly)
+
+    // Calculate max scroll position (longest line determines scroll range)
+    const maxScrollPosition = Math.max(...lines.map(line =>
+      Math.max(0, line.length - lineWidth)
+    ));
+
+    const scrollInterval = setInterval(() => {
+      if (!this.sessionActive || !this.currentSession) {
+        this.stopScrollingText();
+        return;
+      }
+
+      try {
+        // Build the visible text window for each line
+        const visibleLines = lines.map(line => {
+          if (line.length <= lineWidth) {
+            // Line fits, no scrolling needed
+            return line;
+          }
+
+          // Calculate how much this line can scroll
+          const lineMaxScroll = line.length - lineWidth;
+
+          // Use proportional scrolling so all lines stay synchronized
+          const lineScroll = Math.min(
+            Math.floor((scrollPosition / maxScrollPosition) * lineMaxScroll),
+            lineMaxScroll
+          );
+
+          // Extract the visible window
+          return line.substring(lineScroll, lineScroll + lineWidth);
+        });
+
+        session.layouts.showTextWall(
+          visibleLines.join('\n'),
+          {
+            view: ViewType.MAIN,
+            durationMs: scrollSpeed + 200 // Slightly longer than interval to prevent flicker
+          }
+        );
+
+        // Handle pausing at start
+        if (scrollPosition === 0 && pauseFrames < pauseAtStart) {
+          pauseFrames++;
+          return;
+        }
+
+        // Handle pausing at end
+        if (scrollPosition >= maxScrollPosition && pauseFrames < pauseAtStart + pauseAtEnd) {
+          pauseFrames++;
+          return;
+        }
+
+        // Advance scroll position
+        scrollPosition++;
+
+        // Loop back to start when reaching the end
+        if (scrollPosition > maxScrollPosition + pauseAtEnd) {
+          scrollPosition = 0;
+          pauseFrames = 0;
+        }
+
+      } catch (error) {
+        console.error('Error updating scrolling text:', error);
+        this.stopScrollingText();
+      }
+    }, scrollSpeed);
+
+    this.scrollingTextInterval = scrollInterval;
+
+    // Auto-stop after duration
+    setTimeout(() => {
+      this.stopScrollingText();
+    }, durationMs);
+  }
+
+  /**
+   * Stop the scrolling text display
+   */
+  private stopScrollingText(): void {
+    if (this.scrollingTextInterval) {
+      clearInterval(this.scrollingTextInterval);
+      this.scrollingTextInterval = undefined;
+      console.log('✓ Scrolling text stopped');
     }
   }
 }
