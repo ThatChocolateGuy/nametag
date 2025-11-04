@@ -2,43 +2,72 @@
 
 ## Architecture Overview
 
-This is a **MentraOS cloud app** for Even Realities G1 smart glasses that remembers names and conversations using audio-only input. The app follows a service-oriented architecture with clear separation of concerns.
+This is a **MentraOS cloud app** for Even Realities G1 smart glasses that remembers names and conversations using audio-only input. The app follows a service-oriented architecture with clear separation of concerns and cloud-native deployment.
 
 ### Core Data Flow
 ```
-Glasses → MentraOS App → Cloud App (this) → OpenAI (name extraction) → Storage
+Glasses → MentraOS App → Cloud App (Railway) → OpenAI (transcription + name extraction) → Supabase (storage)
+                                              ↘ Companion UI (Vercel) → Supabase
 ```
 
-**Key files**: `src/index.ts` (main app server), `src/services/conversationManager.ts` (orchestration), `src/services/nameExtractionService.ts` (OpenAI integration)
+**Key files**:
+- `src/index.ts` (main app server)
+- `src/webserver.ts` (companion UI server)
+- `src/services/conversationManager.ts` (orchestration)
+- `src/services/nameExtractionService.ts` (OpenAI integration)
+- `src/services/supabaseStorageClient.ts` (database storage)
+- `src/services/openaiTranscriptionService.ts` (voice recognition)
 
 ## Critical Architecture Patterns
 
-### 1. Dual Storage Strategy
-- **Primary**: `FileStorageClient` (`src/services/fileStorageClient.ts`) - Local JSON storage in `./data/memories.json`
-- **Secondary**: `MemoryClient` (`src/services/memoryClient.ts`) - External MCP server (has SSE timeout issues)
-- **Pattern**: Both implement identical interface for drop-in replacement
+### 1. Cloud Storage Strategy
+- **Production**: `SupabaseStorageClient` (`src/services/supabaseStorageClient.ts`) - PostgreSQL database on Supabase
+- **Features**: Multi-device sync, automatic backups, connection pooling, row-level security
+- **Pattern**: Implements storage interface for potential drop-in replacement
 
 ### 2. Service Dependency Injection
 ```typescript
 // In index.ts constructor
-this.memoryClient = new FileStorageClient('./data');  // Not MemoryClient!
+this.storageClient = new SupabaseStorageClient(SUPABASE_URL, SUPABASE_KEY);
 this.nameExtractor = new NameExtractionService(OPENAI_API_KEY, OPENAI_MODEL);
-this.conversationManager = new ConversationManager(this.memoryClient, this.nameExtractor);
+this.transcriptionService = new OpenAITranscriptionService(OPENAI_API_KEY);
+this.conversationManager = new ConversationManager(this.storageClient, this.nameExtractor);
 ```
 
 ### 3. Feature Flags & Environment Config
 - `OPENAI_MODEL` swaps models (see `MODEL_SELECTION.md`)
-- **SSL bypass**: `NODE_TLS_REJECT_UNAUTHORIZED='0'` for dev only
+- `SUPABASE_URL` and `SUPABASE_KEY` for database connection
+- **SSL bypass**: `NODE_TLS_REJECT_UNAUTHORIZED='0'` for local dev only (not needed in Railway)
 
 ## Development Workflows
 
+### Production Deployment (Railway)
+```bash
+# Deploy main app
+railway up
+
+# Configure environment variables in Railway dashboard
+# Update MentraOS console with Railway URL
+```
+
+### Companion UI Deployment (Vercel)
+```bash
+# Deploy companion UI
+vercel
+
+# Configure environment variables in Vercel dashboard
+```
+
 ### Local Development
 ```bash
-# Start with hot reload
+# Start main app with hot reload
 bun run dev
 
-# In separate terminal: expose via ngrok
-ngrok http --domain=your-static-domain.ngrok-free.app 3000
+# Start companion UI (separate terminal)
+bun run dev:web
+
+# Optional: expose via ngrok for remote testing
+ngrok http 3000
 ```
 
 ### Testing Name Extraction
@@ -65,12 +94,18 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY ?? (() => {
 ```
 
 ### 2. Storage Interface Pattern
-Both storage clients must implement:
-- `storePerson(person: Person): Promise<void>`
-- `findPerson(name: string): Promise<Person | null>`
-- `searchPeople(query: string): Promise<Person[]>`
+SupabaseStorageClient implements:
+- `storePerson(person: Person): Promise<void>` - Upsert to PostgreSQL
+- `findPerson(name: string): Promise<Person | null>` - Case-insensitive query
+- `searchPeople(query: string): Promise<Person[]>` - Full-text search
+- `getAllPeople(): Promise<Person[]>` - Retrieve all with pagination support
+- `deletePerson(name: string): Promise<void>` - Soft or hard delete
 
-**Important**: People are keyed by name (not speaker ID) to persist across sessions. Speaker IDs (A, B, C) are session-specific and may change between conversations.
+**Important**:
+- People are keyed by name (not speaker ID) to persist across sessions
+- Speaker IDs (A, B, C) are session-specific and may change between conversations
+- Database uses JSONB for conversation history (flexible schema)
+- Connection pooling enabled for optimal performance
 
 ### 3. Conversation History Tracking
 - **ConversationEntry Interface**: Each conversation stored as `{ date: Date, transcript: string, topics: string[], keyPoints?: string[], duration?: number }`
@@ -126,9 +161,11 @@ if (isFinal) {
 ## Common Development Tasks
 
 ### Adding New Storage Fields
-1. Update `Person` interface in both `memoryClient.ts` and `fileStorageClient.ts`
-2. Add migration logic in `FileStorageClient.loadData()`
-3. Update OpenAI prompts to extract new fields
+1. Update `Person` interface in `supabaseStorageClient.ts`
+2. Create Supabase migration: `npx supabase migration new add_field_name`
+3. Update SQL schema in migration file
+4. Run migration: `npx supabase db push`
+5. Update OpenAI prompts to extract new fields
 
 ### Modifying Conversation Processing
 - Main logic in `ConversationManager.processTranscription()`
@@ -141,15 +178,32 @@ Set `OPENAI_MODEL` in `.env` - no code changes needed. Refer to `MODEL_SELECTION
 ### Debugging Transcription Issues
 - Check `this.sessionActive` state
 - Verify `isFinal=true` for actual processing
-- Use file storage for reliable debugging (avoid MCP SSE timeouts)
+- Check Supabase connection and credentials
+- Review Railway logs for production issues
 - **Speaker Diarization**: OpenAI transcription returns speaker IDs (A, B, C). Speaker IDs stored in `speakerAssignments`, mapped to names via `getDisplayName()`. Check console for "Unknown Speaker" vs actual names.
+
+### Deployment Debugging
+- **Railway**: Check deployment logs in Railway dashboard
+- **Vercel**: Check function logs in Vercel dashboard
+- **Supabase**: Monitor database usage and logs in Supabase dashboard
+- **Environment Variables**: Verify all variables are set in production
 
 ## File Organization Logic
 
 - `src/index.ts`: MentraOS app server + session management
+- `src/webserver.ts`: Companion UI Express server + REST API
 - `src/services/`: All business logic, each service has single responsibility
-- `data/`: Local storage directory (auto-created)
-- `temp/`: Temporary files for audio processing
+  - `supabaseStorageClient.ts`: PostgreSQL database operations
+  - `nameExtractionService.ts`: OpenAI GPT-4o-mini integration
+  - `openaiTranscriptionService.ts`: Real-time voice transcription
+  - `conversationManager.ts`: Business logic orchestration
+- `public/`: Companion UI frontend (HTML/CSS/JS)
+- `supabase/migrations/`: Database schema migrations
+- `railway.json`: Railway deployment configuration
 - Root `.md` files: Comprehensive documentation for all aspects
 
-When debugging, check `STATUS.md` and `TROUBLESHOOTING_NGROK.md` for known issues and solutions.
+When debugging:
+- Check `STATUS.md` for current project status
+- Review Railway/Vercel deployment logs
+- Verify Supabase connection and schema
+- Test environment variables are set correctly

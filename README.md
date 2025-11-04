@@ -32,7 +32,13 @@ A MentraOS cloud app for Even Realities G1 smart glasses that automatically reco
 ## Architecture
 
 ```md
-G1 Glasses Audio → MentraOS → Cloud App (this) → OpenAI GPT-4o → Local File Storage
+G1 Glasses Audio → MentraOS → Cloud App (Railway)
+                                    ↓
+                        SupabaseStorageClient → Supabase PostgreSQL
+                                    ↓                    ↑
+                        OpenAI GPT-4o (Voice + AI)      |
+                                                         |
+                        Companion UI (Vercel) ───────────┘
 ```
 
 **Key Flow:**
@@ -40,8 +46,9 @@ G1 Glasses Audio → MentraOS → Cloud App (this) → OpenAI GPT-4o → Local F
 1. Audio streamed from G1 microphone
 2. OpenAI transcribes + identifies speakers by voice
 3. Names extracted from self-introductions
-4. Conversation history retrieved and displayed
-5. Context saved with key points for next meeting
+4. Conversation history retrieved from Supabase and displayed
+5. Context saved with key points to Supabase for next meeting
+6. Companion UI accesses same Supabase database for web interface
 
 ## Tech Stack
 
@@ -50,8 +57,10 @@ G1 Glasses Audio → MentraOS → Cloud App (this) → OpenAI GPT-4o → Local F
 - **AI Models**:
   - OpenAI `gpt-4o-mini` (name extraction, summarization)
   - OpenAI `gpt-4o-transcribe-diarize` (voice recognition)
-- **Storage**: Local JSON file storage (`./data/memories.json`)
-- **Development**: ngrok for local tunneling
+- **Storage**: Supabase PostgreSQL
+- **Deployment**:
+  - Main app: Railway (with automatic deployments)
+  - Companion UI: Vercel (with automatic deployments)
 
 ## Prerequisites
 
@@ -60,15 +69,18 @@ G1 Glasses Audio → MentraOS → Cloud App (this) → OpenAI GPT-4o → Local F
 - Even Realities G1 smart glasses
 - MentraOS mobile app
 
-### Software
+### Software & Services
 
-- [Bun](https://bun.sh) (recommended) or Node.js 18+
-- [ngrok](https://ngrok.com) account with static domain
+- [Bun](https://bun.sh) (recommended) or Node.js 18+ (for local development)
+- [Railway](https://railway.app) account (for main app hosting)
+- [Vercel](https://vercel.com) account (for companion UI hosting)
+- [Supabase](https://supabase.com) account (for database)
 
 ### API Keys
 
 - **MentraOS API Key**: [console.mentra.glass](https://console.mentra.glass)
 - **OpenAI API Key**: [platform.openai.com](https://platform.openai.com)
+- **Supabase Connection String**: From your Supabase project settings
 
 ## Quick Start
 
@@ -95,30 +107,52 @@ PACKAGE_NAME=nem.codes.nametag
 MENTRAOS_API_KEY=your_mentraos_api_key
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-4o-mini
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+DATABASE_URL=your_supabase_connection_string
 PORT=3000
+WEB_PORT=3001
+COOKIE_SECRET=your_random_secret
 ```
 
-### 3. Start the App
+### 3. Set up Supabase Database
 
-```bash
-bun run dev
-```
+1. Create a new Supabase project at [supabase.com](https://supabase.com)
+2. Run the SQL schema from `supabase/schema.sql` in the SQL editor
+3. Get your connection details from Project Settings > Database
+4. Add to your `.env` file
 
-### 4. Expose with ngrok
+### 4. Deploy to Railway
 
-In a separate terminal:
+1. Connect your GitHub repository to Railway
+2. Add environment variables in Railway dashboard
+3. Railway will auto-deploy from your `railway.json` configuration
+4. Copy your Railway app URL (e.g., `https://your-app.railway.app`)
 
-```bash
-ngrok http --domain=your-static-domain.ngrok-free.app 3000
-```
+### 5. Deploy Companion UI to Vercel (Optional)
 
-### 5. Register in MentraOS Console
+1. Connect your GitHub repository to Vercel
+2. Set the root directory to `public/`
+3. Add environment variables
+4. Vercel will auto-deploy on every push
+
+### 6. Register in MentraOS Console
 
 1. Go to [console.mentra.glass](https://console.mentra.glass)
 2. Create a new app with your package name
-3. Set Public URL to your ngrok domain (no trailing slash)
+3. Set Public URL to your Railway app URL (no trailing slash)
 4. Add **Microphone** permission
 5. Save and install on your G1 glasses
+
+### 7. Local Development (Optional)
+
+```bash
+# Start main app locally
+bun run dev
+
+# Start companion UI locally (in another terminal)
+bun run dev:web
+```
 
 ## Using Nametag
 
@@ -147,11 +181,13 @@ ngrok http --domain=your-static-domain.ngrok-free.app 3000
 
 Access your data through the web interface:
 
+**Production (Vercel)**: Visit your deployed Vercel URL
+**Local Development**:
 ```bash
 # Start the companion UI
 bun run dev:web
 
-# Open in browser (local)
+# Open in browser
 http://localhost:3001
 ```
 
@@ -164,6 +200,7 @@ Features:
 - Export data
 - Delete people
 - Works on desktop and mobile (via MentraOS app)
+- Syncs with same Supabase database as main app
 
 See **[COMPANION_UI.md](./docs/COMPANION_UI.md)** for full guide.
 
@@ -177,8 +214,8 @@ All detailed documentation is in the `docs/` folder:
 - **[IMPLEMENTATION.md](./docs/IMPLEMENTATION.md)** - Technical architecture details
 - **[TESTING_GUIDE.md](./docs/TESTING_GUIDE.md)** - How to test the app
 - **[MODEL_SELECTION.md](./docs/MODEL_SELECTION.md)** - OpenAI model configuration
-- **[STORAGE.md](./docs/STORAGE.md)** - Data storage structure
-- **[TROUBLESHOOTING_NGROK.md](./docs/TROUBLESHOOTING_NGROK.md)** - Common ngrok issues
+- **[STORAGE.md](./docs/STORAGE.md)** - Data storage structure (Supabase)
+- **[TROUBLESHOOTING_NGROK.md](./docs/TROUBLESHOOTING_NGROK.md)** - Legacy: ngrok troubleshooting (for local dev)
 
 ## Development
 
@@ -188,25 +225,30 @@ All detailed documentation is in the `docs/` folder:
 nametag/
 ├── src/
 │   ├── index.ts                      # Main app server
+│   ├── webserver.ts                  # Companion UI server
 │   └── services/
 │       ├── conversationManager.ts    # Conversation orchestration
 │       ├── nameExtractionService.ts  # OpenAI name extraction
 │       ├── openaiTranscriptionService.ts  # Voice recognition
-│       └── fileStorageClient.ts      # Local storage
-├── data/
-│   └── memories.json                 # Person database
+│       └── supabaseStorageClient.ts  # Supabase PostgreSQL storage
+├── supabase/
+│   └── schema.sql                    # Database schema
+├── public/                           # Companion UI frontend
+├── railway.json                      # Railway deployment config
 └── temp/                             # Temp audio files
 ```
 
 ### Key Design Patterns
 
-**Local File Storage**: Uses JSON file storage at `./data/memories.json` for persistent data.
+**Supabase PostgreSQL Storage**: Uses Supabase for persistent data with structured tables for people, conversations, and voice references.
 
 **Service Dependency Injection**: ConversationManager orchestrates all services (storage, AI, transcription) with clean interfaces.
 
-**Voice Reference Storage**: 7-second audio clips stored as base64 for future voice matching by OpenAI.
+**Voice Reference Storage**: 7-second audio clips stored as base64 in Supabase for future voice matching by OpenAI.
 
 **Speaker Identity Protection**: Once a speaker is identified in a session, that mapping persists to prevent misidentification.
+
+**Cloud-Native Architecture**: Main app on Railway, companion UI on Vercel, both accessing shared Supabase database.
 
 ### Build Commands
 
@@ -223,15 +265,22 @@ bun start
 
 ## Cost Estimate
 
-With OpenAI `gpt-4o-mini` (default):
+### OpenAI API (with `gpt-4o-mini` default):
 
 - **Name extraction**: ~$0.0001 per request
 - **Conversation summary**: ~$0.001 per conversation
 - **Voice transcription**: ~$0.002 per minute of audio
 
 **Typical daily usage** (10 conversations, 5 min each):
-
 - ~$0.05/day = **~$1.50/month**
+
+### Hosting Services:
+
+- **Supabase**: Free tier (500MB database, 2GB bandwidth)
+- **Railway**: $5/month (500 hours execution time)
+- **Vercel**: Free tier (100GB bandwidth, unlimited deployments)
+
+**Total estimated monthly cost**: **~$6.50/month** (including hosting)
 
 See [MODEL_SELECTION.md](./docs/MODEL_SELECTION.md) for cost/performance details.
 
@@ -252,6 +301,9 @@ MIT License - see [LICENSE](./LICENSE) file
 - **MentraOS Team** for the excellent SDK
 - **OpenAI** for powerful voice recognition and language models
 - **Even Realities** for the incredible G1 smart glasses
+- **Supabase** for reliable PostgreSQL database hosting
+- **Railway** for seamless deployment and hosting
+- **Vercel** for fast and easy frontend deployment
 
 ## Support
 

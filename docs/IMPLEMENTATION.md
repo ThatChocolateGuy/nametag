@@ -37,9 +37,14 @@ This application uses Even Realities G1 smart glasses to help users remember peo
 │  └───────────────────────┘  └──────┬──────────────────┘         │
 │                                    │                            │
 │                         ┌──────────▼──────────────┐             │
-│                         │  FileStorageClient      │             │
-│                         │  (Local JSON Storage)   │             │
-│                         │  ./data/memories.json   │             │
+│                         │ SupabaseStorageClient   │             │
+│                         │  (Cloud Database)       │             │
+│                         │  Supabase PostgreSQL    │             │
+│                         └──────────┬──────────────┘             │
+│                                    │                            │
+│                         ┌──────────▼──────────────┐             │
+│                         │   Supabase Cloud        │             │
+│                         │  (PostgreSQL + Auth)    │             │
 │                         └─────────────────────────┘             │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -159,20 +164,20 @@ private currentTranscript: string[]
    - Updates all participants with summary
    - Stores final state
 
-### 4. File Storage Client (src/services/fileStorageClient.ts)
+### 4. Supabase Storage Client (src/services/supabaseStorageClient.ts)
 
-**Purpose**: Local JSON file storage for person data
+**Purpose**: Cloud PostgreSQL database storage for person data
 
-**Storage Location**: `./data/memories.json`
+**Storage Location**: Supabase PostgreSQL database
 
 **Features**:
 
-- Simple, reliable file-based storage
-- No external dependencies
-- Fast performance (< 1ms operations)
-- Easy backup and export
-- Automatic directory creation
-- Migration support for backward compatibility
+- Reliable cloud database storage
+- Multi-device synchronization
+- Fast performance with connection pooling
+- Automatic backups and point-in-time recovery
+- Built-in authentication and authorization
+- Migration support for schema updates
 
 **Data Format**:
 
@@ -195,14 +200,17 @@ interface ConversationEntry {
   duration?: number;                   // Duration in seconds
 }
 
-// Storage structure
+// Database structure (Supabase PostgreSQL)
+// Table: people
 {
-  "people": {
-    "person_john_smith": Person,
-    "person_sarah_jones": Person
-  },
-  "version": "1.0.0",
-  "lastModified": "2025-01-30T12:00:00.000Z"
+  id: UUID (primary key),
+  name: TEXT (indexed),
+  speaker_id: TEXT,
+  voice_reference: TEXT,
+  conversation_history: JSONB,
+  last_met: TIMESTAMP,
+  created_at: TIMESTAMP,
+  updated_at: TIMESTAMP
 }
 ```
 
@@ -224,9 +232,8 @@ const everyone = await storage.getAllPeople();
 // Delete person
 await storage.deletePerson("John Smith");
 
-// Export/Import for backup
-const json = storage.exportData();
-storage.importData(jsonString);
+// Export data (from Supabase to JSON)
+const json = await storage.exportData();
 ```
 
 ## Implementation Flow
@@ -235,7 +242,7 @@ storage.importData(jsonString);
 
 1. User launches app on MentraOS mobile
 2. App connects to cloud server via WebSocket
-3. FileStorageClient initializes and loads known people
+3. SupabaseStorageClient initializes and connects to database
 4. ConversationManager initializes
 5. Display shows "Nametag Ready!"
 
@@ -257,9 +264,9 @@ NameExtractionService.extractNames()
   ↓
 OpenAI returns: [{name: "James", confidence: "high"}]
   ↓
-Check fileStorageClient.findPersonByName("James")
+Check SupabaseStorageClient.findPersonByName("James")
   ↓
-If new: Store + Display "Nice to meet you James!"
+If new: Store to Supabase + Display "Nice to meet you James!"
 If known: Display "Welcome back James!" + last context
 ```
 
@@ -289,23 +296,25 @@ If known: Display "Welcome back James!" + last context
 - Get speaker-labeled transcripts (Speaker A, Speaker B, etc.)
 - Match speakers to known voice profiles
 
-### 2. File-Based Storage
+### 2. Cloud Database Storage
 
-**Approach**: Local JSON file storage at `./data/memories.json`
+**Approach**: Supabase PostgreSQL database
 
 **Benefits**:
 
-- Zero latency (< 1ms operations)
-- No network dependencies
-- Simple backup/restore
-- Easy debugging and inspection
-- No external service dependencies
+- Multi-device synchronization
+- Automatic backups and point-in-time recovery
+- Built-in authentication and row-level security
+- Fast performance with connection pooling (< 50ms operations)
+- Scalable for production use
+- Real-time subscriptions available
 
-**Future Considerations**:
+**Configuration**:
 
-- For multi-device sync: Consider cloud database (PostgreSQL, MongoDB)
-- For production scale: Implement proper database with migrations
-- For team usage: Add authentication and user-specific storage
+- Database hosted on Supabase cloud
+- Connection pooling for optimal performance
+- Automatic schema migrations
+- Environment-based configuration (dev/prod)
 
 ### 3. Batch Name Processing
 
@@ -345,8 +354,10 @@ MENTRAOS_API_KEY=your_key_here              # From console.mentra.glass
 OPENAI_API_KEY=your_key_here                # From platform.openai.com
 OPENAI_MODEL=gpt-4o-mini                    # Model selection (swappable)
 
-# Optional Services
-ASSEMBLYAI_API_KEY=your_key_here            # For future diarization
+# Supabase Configuration
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your_anon_key_here             # From Supabase project settings
+SUPABASE_SERVICE_KEY=your_service_key       # For admin operations (optional)
 ```
 
 ### Model Selection
@@ -375,7 +386,7 @@ See `MODEL_SELECTION.md` for detailed comparison.
 
 1. **Prerequisites**:
    - Bun runtime (recommended) or Node.js 18+
-   - ngrok account with static domain
+   - Supabase account and project
    - MentraOS app registration
 
 2. **Setup**:
@@ -384,37 +395,86 @@ See `MODEL_SELECTION.md` for detailed comparison.
    cd smartglasses-memory-app
    bun install
    cp .env.example .env
-   # Edit .env with your credentials
+   # Edit .env with your credentials (including Supabase URL and keys)
    ```
 
 3. **Run**:
 
    ```bash
-   # Terminal 1: Start app with hot reload
+   # Start app with hot reload
    bun run dev
-
-   # Terminal 2: Expose via ngrok
-   ngrok http --url=your-static-url.ngrok-free.dev 3000
    ```
 
-4. **Connect Glasses**:
+4. **Local Testing** (Optional):
+   ```bash
+   # For local testing with ngrok
+   ngrok http 3000
+   ```
+
+5. **Connect Glasses**:
    - Open MentraOS mobile app
    - Launch your registered app
    - Should see "Nametag Ready!" on glasses
 
+### Production Deployment (Railway)
+
+1. **Setup Railway Project**:
+   ```bash
+   # Install Railway CLI
+   npm install -g railway
+
+   # Login and initialize
+   railway login
+   railway init
+   ```
+
+2. **Configure Environment**:
+   - Add all environment variables in Railway dashboard
+   - Set `PORT` to Railway's PORT variable
+   - Configure Supabase connection pooling for production
+
+3. **Deploy**:
+   ```bash
+   railway up
+   ```
+
+4. **Update MentraOS Console**:
+   - Set "Public URL" to your Railway deployment URL
+   - Enable microphone permission
+
+### Companion UI Deployment (Vercel)
+
+1. **Setup Vercel Project**:
+   ```bash
+   # Install Vercel CLI
+   npm install -g vercel
+
+   # Deploy
+   vercel
+   ```
+
+2. **Configure Environment**:
+   - Add all required environment variables
+   - Set `WEB_PORT` appropriately
+   - Configure CORS for Railway backend
+
+3. **Access**:
+   - Companion UI available at Vercel URL
+   - Connects to Railway backend API
+
 ### Production Considerations
 
-**DO NOT deploy to production without**:
+**Deployment checklist**:
 
-1. Removing SSL bypass (`NODE_TLS_REJECT_UNAUTHORIZED`)
-2. Adding proper SSL certificate validation
-3. Implementing authentication/authorization
-4. Adding rate limiting
-5. Securing API keys (use secrets manager)
-6. Adding proper error handling and logging
-7. Implementing data privacy protections (GDPR, etc.)
-8. Adding database instead of file storage
-9. Implementing proper backup strategy
+1. ✅ SSL/TLS enabled by default (Railway/Vercel)
+2. ✅ Database storage with automatic backups (Supabase)
+3. ⚠️ Implement rate limiting for API endpoints
+4. ⚠️ Secure API keys using Railway/Vercel environment variables
+5. ⚠️ Add proper error handling and logging (Sentry/LogRocket)
+6. ⚠️ Implement data privacy protections (GDPR, etc.)
+7. ⚠️ Configure CORS appropriately for companion UI
+8. ⚠️ Set up monitoring and alerting
+9. ✅ Automatic deployment on git push
 
 ## Testing
 
@@ -491,18 +551,17 @@ Test phrases:
 
 ## Troubleshooting
 
-### Storage File Issues
+### Database Connection Issues
 
-**Symptom**: `ENOENT: no such file or directory` error
+**Symptom**: `Connection refused` or timeout errors
 
-**Cause**: Data directory doesn't exist
+**Cause**: Supabase connection misconfigured or down
 
-**Solution**: FileStorageClient automatically creates the directory, but if issues persist:
-
-```bash
-mkdir -p data
-chmod 755 data
-```
+**Solution**:
+1. Verify `SUPABASE_URL` and `SUPABASE_KEY` in .env
+2. Check Supabase project status at supabase.com
+3. Ensure connection pooling is configured
+4. Check network connectivity to Supabase
 
 ### Names Not Detected
 
@@ -517,20 +576,31 @@ chmod 755 data
 
 **Check**:
 
-1. ngrok is running on correct port (3000)
-2. Package name matches in .env and console
-3. Microphone permission enabled in MentraOS console
-4. MentraOS mobile app is logged in
-5. Glasses are paired with mobile app
+1. Railway deployment is running (check Railway dashboard)
+2. Package name matches in .env and MentraOS console
+3. Public URL in MentraOS console matches Railway deployment URL
+4. Microphone permission enabled in MentraOS console
+5. MentraOS mobile app is logged in
+6. Glasses are paired with mobile app
+
+**Local Development**:
+1. If using ngrok, ensure tunnel is running on correct port (3000)
+2. ngrok URL matches the URL in MentraOS console
 
 ### WebSocket Disconnections
 
 **Check**:
 
 1. Network stability
-2. ngrok connection status
-3. SSL bypass is enabled (NODE_TLS_REJECT_UNAUTHORIZED='0')
-4. No port conflicts (kill other processes on 3000)
+2. Railway deployment health (check logs)
+3. Database connection pool isn't exhausted
+4. No memory leaks in long-running sessions
+5. Supabase connection is stable
+
+**Local Development**:
+1. ngrok connection status
+2. SSL bypass is enabled (NODE_TLS_REJECT_UNAUTHORIZED='0')
+3. No port conflicts (kill other processes on 3000)
 
 ## Future Enhancements
 
@@ -586,23 +656,28 @@ async processAudio(chunk: Buffer) {
 smartglasses-memory-app/
 ├── src/
 │   ├── index.ts                        # Main MentraOS app server
+│   ├── webserver.ts                    # Companion UI web server
 │   └── services/
-│       ├── fileStorageClient.ts        # Local JSON file storage
+│       ├── supabaseStorageClient.ts    # Supabase PostgreSQL storage
 │       ├── nameExtractionService.ts    # OpenAI name extraction
 │       ├── conversationManager.ts      # Business logic orchestration
-│       ├── openaiTranscriptionService.ts # Voice recognition
-│       └── diarizationService.ts       # AssemblyAI (prepared for future)
-├── data/
-│   └── memories.json                   # Person database (auto-created)
+│       └── openaiTranscriptionService.ts # Voice recognition
+├── public/                             # Companion UI frontend
+│   ├── index.html
+│   ├── css/
+│   └── js/
 ├── docs/                               # Documentation
 │   ├── QUICKSTART.md
 │   ├── IMPLEMENTATION.md               # This file
 │   ├── STORAGE.md
 │   └── ...
+├── supabase/                           # Supabase migrations
+│   └── migrations/
 ├── package.json                        # Bun-optimized scripts
 ├── tsconfig.json                       # TypeScript configuration
 ├── .env.example                        # Environment template
 ├── .env                               # Local configuration (git-ignored)
+├── railway.json                        # Railway deployment config
 └── README.md                          # User setup guide
 ```
 
@@ -672,10 +747,10 @@ const match = await extractor.matchSpeakerToPerson(
 // Returns: "John" (if John previously discussed vacations)
 ```
 
-### File Storage Client
+### Supabase Storage Client
 
 ```typescript
-const storage = new FileStorageClient('./data');
+const storage = new SupabaseStorageClient(supabaseUrl, supabaseKey);
 
 // Store person
 await storage.storePerson({
@@ -701,9 +776,9 @@ const everyone = await storage.getAllPeople();
 // Delete person
 await storage.deletePerson("John Smith");
 
-// Export/Import for backup
-const json = storage.exportData();
-storage.importData(jsonString);
+// Export data
+const json = await storage.exportData();
+// Returns: JSON string of all people
 ```
 
 ## License

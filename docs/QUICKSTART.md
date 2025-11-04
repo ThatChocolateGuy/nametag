@@ -6,10 +6,12 @@ Get your Nametag app running in 5 minutes!
 
 - [ ] Even Realities G1 glasses (or MentraOS-compatible device)
 - [ ] MentraOS mobile app installed
-- [ ] Node.js 18+ installed
-- [ ] ngrok account created
+- [ ] Node.js 18+ or Bun installed
+- [ ] Supabase account created
+- [ ] Railway account created (for production deployment)
+- [ ] ngrok account (optional, for local development only)
 
-## Step 1: Get API Keys (5 minutes)
+## Step 1: Get API Keys and Services (10 minutes)
 
 ### 1. MentraOS API Key
 
@@ -28,39 +30,70 @@ Get your Nametag app running in 5 minutes!
 4. Create a new key
 5. Copy the key (starts with `sk-`)
 
-### 3. AssemblyAI API Key (Optional for POC)
+### 3. Supabase Setup
 
-1. Go to [assemblyai.com](https://assemblyai.com)
-2. Sign up for free account
-3. Get API key from dashboard
+1. Go to [supabase.com](https://supabase.com)
+2. Create a new account or sign in
+3. Click "New Project"
+4. Choose organization and set project details
+5. Wait for project to be provisioned (~2 minutes)
+6. Go to Project Settings → API
+7. Copy your project URL (e.g., `https://xxxxx.supabase.co`)
+8. Copy your `anon` public key
+9. Run the database migration (see Step 3 below)
 
-## Step 2: Set Up ngrok (2 minutes)
+## Step 2: Deploy to Railway (Production) or Setup Local Dev
 
-1. Download ngrok:
+### Option A: Production Deployment (Recommended)
 
+1. **Create Railway Account**:
+   - Go to [railway.app](https://railway.app)
+   - Sign up with GitHub
+
+2. **Deploy from GitHub**:
    ```bash
-   # Windows
-   choco install ngrok
+   # Push your code to GitHub first
+   git push origin main
 
-   # macOS
-   brew install ngrok
+   # Or use Railway CLI
+   npm install -g @railway/cli
+   railway login
+   railway init
+   railway up
+   ```
 
+3. **Configure Environment Variables**:
+   - In Railway dashboard, go to your project
+   - Add all environment variables from `.env.example`
+   - **Critical**: Add `SUPABASE_URL` and `SUPABASE_KEY`
+
+4. **Get Railway URL**:
+   - Railway automatically assigns a URL
+   - Copy it (e.g., `https://your-app.railway.app`)
+
+5. **Update MentraOS Console**:
+   - Go to [console.mentra.glass](https://console.mentra.glass)
+   - Edit your app
+   - Set "Public URL" to your Railway URL
+
+### Option B: Local Development with ngrok
+
+1. **Install ngrok** (for local testing only):
+   ```bash
+   # Windows: choco install ngrok
+   # macOS: brew install ngrok
    # Or download from https://ngrok.com/download
    ```
 
-2. Sign up at [ngrok.com](https://ngrok.com)
-
-3. Get a static domain:
+2. **Get Static Domain** (optional):
    - Go to [dashboard.ngrok.com](https://dashboard.ngrok.com)
-   - Navigate to "Domains" → "New Domain"
-   - Copy your static domain (e.g., `your-app.ngrok-free.app`)
+   - Create a free static domain
 
-4. Update MentraOS Console:
-   - Go back to [console.mentra.glass](https://console.mentra.glass)
-   - Edit your app
-   - Set "Public URL" to: `https://your-app.ngrok-free.app`
+3. **Update MentraOS Console** (for local dev):
+   - Set "Public URL" to your ngrok URL
+   - This will change each time unless you use a static domain
 
-## Step 3: Configure the App (2 minutes)
+## Step 3: Configure the App (3 minutes)
 
 1. Navigate to project:
 
@@ -68,30 +101,81 @@ Get your Nametag app running in 5 minutes!
    cd smartglasses-memory-app
    ```
 
-2. Create `.env` file:
+2. Install dependencies:
+
+   ```bash
+   # Using Bun (recommended)
+   bun install
+
+   # Or using npm
+   npm install
+   ```
+
+3. Create `.env` file:
 
    ```bash
    cp .env.example .env
    ```
 
-3. Edit `.env` with your keys:
+4. Edit `.env` with your keys:
 
    ```env
+   # Server
    PORT=3000
    PACKAGE_NAME=com.yourname.memoryapp
+
+   # MentraOS
    MENTRAOS_API_KEY=your_mentraos_api_key_here
-   ASSEMBLYAI_API_KEY=your_assemblyai_key_here
+
+   # OpenAI
    OPENAI_API_KEY=sk-your_openai_api_key_here
    OPENAI_MODEL=gpt-4o-mini
+
+   # Supabase (REQUIRED)
+   SUPABASE_URL=https://xxxxx.supabase.co
+   SUPABASE_KEY=your_anon_key_here
+
+   # Companion UI (optional)
+   WEB_PORT=3001
+   COOKIE_SECRET=your-secret-key-here
    ```
 
    **Note**: `OPENAI_MODEL=gpt-4o-mini` is the recommended default. See `MODEL_SELECTION.md` for other options.
 
-## Step 4: Run the App (1 minute)
-
-1. **Terminal 1** - Start the app:
+5. Run Supabase migrations:
 
    ```bash
+   # Initialize Supabase CLI (first time only)
+   npx supabase init
+
+   # Link to your project
+   npx supabase link --project-ref your-project-ref
+
+   # Run migrations
+   npx supabase db push
+   ```
+
+## Step 4: Run the App
+
+### Production (Railway)
+
+Your app is already running! Railway automatically:
+- Builds and deploys on git push
+- Assigns a public URL
+- Manages environment variables
+- Provides logs and monitoring
+
+Check Railway dashboard to verify deployment status.
+
+### Local Development
+
+1. **Start the main app**:
+
+   ```bash
+   # Using Bun (faster)
+   bun run dev
+
+   # Or using npm
    npm run dev
    ```
 
@@ -103,20 +187,23 @@ Get your Nametag app running in 5 minutes!
    ╚══════════════════════════════════════════╝
 
    ✓ Server started on port 3000
+   ✓ Connected to Supabase
    ✓ Package: com.yourname.memoryapp
    ```
 
-2. **Terminal 2** - Start ngrok:
+2. **Start ngrok** (separate terminal, local dev only):
 
    ```bash
-   ngrok http --url=your-app.ngrok-free.app 3000
+   ngrok http 3000
+   # Or with static domain:
+   ngrok http --url=your-domain.ngrok-free.app 3000
    ```
 
-   You should see:
+3. **Start companion UI** (optional, separate terminal):
 
-   ```md
-   Session Status    online
-   Forwarding        https://your-app.ngrok-free.app -> http://localhost:3000
+   ```bash
+   bun run dev:web
+   # Access at http://localhost:3001
    ```
 
 ## Step 5: Connect Your Glasses (1 minute)
@@ -155,17 +242,32 @@ Say your name again.
 
 ## Troubleshooting
 
-### "Connection refused"
+### "Connection refused" or "Cannot connect"
 
-- Check both terminals are running
-- Verify ngrok URL matches the console
-- Restart ngrok
+**Production (Railway)**:
+- Check Railway dashboard for deployment status
+- Verify environment variables are set
+- Check Railway logs for errors
+- Ensure Supabase connection is working
+
+**Local Development**:
+- Check app is running (`bun run dev`)
+- Verify ngrok tunnel is active
+- Ensure ngrok URL matches MentraOS console
+
+### "Database connection failed"
+
+- Verify `SUPABASE_URL` and `SUPABASE_KEY` in .env
+- Check Supabase project is active (not paused)
+- Run migrations: `npx supabase db push`
+- Check network connectivity
 
 ### "API key invalid"
 
 - Double-check .env file has correct keys
 - Make sure no extra spaces in keys
 - Verify keys are active in respective consoles
+- For Railway: check environment variables in dashboard
 
 ### "No microphone permission"
 
@@ -177,17 +279,19 @@ Say your name again.
 ### "Names not detected"
 
 - Wait at least 30 seconds after introduction
-- Check Terminal 1 for "Name detected:" logs
+- Check logs for "Name detected:" messages
 - Try more explicit: "My name is [Name]"
 - Verify OpenAI API key is working
+- Check Supabase connection is stable
 
 ## What's Happening Under the Hood?
 
-1. **Audio Capture**: Glasses mic → MentraOS → Your app
-2. **Transcription**: MentraOS provides real-time text
+1. **Audio Capture**: Glasses mic → MentraOS → Your app (Railway/local)
+2. **Transcription**: OpenAI gpt-4o-transcribe-diarize provides real-time text with speaker detection
 3. **Name Extraction**: OpenAI GPT-4o-mini analyzes text for introductions
-4. **Storage**: Names + context saved to local JSON file
-5. **Recognition**: On next meeting, retrieves and displays info
+4. **Storage**: Names + context saved to Supabase PostgreSQL database
+5. **Recognition**: On next meeting, retrieves from database and displays info
+6. **Sync**: Multi-device sync via cloud database
 
 ## Next Steps
 
@@ -198,36 +302,52 @@ Now that it's working:
    - Adjust `PROCESS_INTERVAL` for faster/slower name checks
    - Modify GPT-4o-mini prompts in `nameExtractionService.ts`
 
-2. **Add True Speaker Diarization**
-   - Implement AssemblyAI integration in `diarizationService.ts`
-   - Capture raw audio instead of using MentraOS transcription
-   - Enable multi-speaker conversations
+2. **Deploy Companion UI**
+   - Deploy to Vercel: `vercel`
+   - Configure environment variables
+   - Access from anywhere to manage contacts
 
 3. **Enhance Memory**
    - Add more fields to Person interface
-   - Implement search by topic
+   - Implement advanced search by topic
    - Add relationship mapping
+   - Create custom reminders
 
-4. **Deploy for Real Use**
-   - Get a permanent hosting solution (not ngrok)
-   - Add authentication/security
-   - Implement privacy controls
-   - Add data encryption
+4. **Monitor and Scale**
+   - Set up logging and monitoring
+   - Configure alerts in Railway
+   - Monitor Supabase usage and performance
+   - Implement rate limiting if needed
 
 ## Cost Estimate
 
 For typical daily use (10 conversations, 5 minutes each):
 
-- **OpenAI API (GPT-4o-mini)**: ~$0.015/day
-  - 10 name extractions × $0.0003 = $0.003
-  - 10 summaries × $0.001 = $0.010
-  - Misc queries = $0.002
+- **OpenAI API**:
+  - Transcription (gpt-4o-transcribe-diarize): ~$0.10/day
+  - Name extraction (GPT-4o-mini): ~$0.003/day
+  - Summaries (GPT-4o-mini): ~$0.010/day
+  - **Subtotal**: ~$0.12/day
 
-- **AssemblyAI**: $0 (not used in POC)
+- **Supabase**: Free tier includes:
+  - 500MB database
+  - 1GB file storage
+  - 2GB bandwidth
+  - Up to 50,000 monthly active users
+  - **Cost**: $0 (Free tier sufficient for personal use)
 
-- **Storage**: $0 (local file storage)
+- **Railway**: Free tier includes:
+  - 512 MB RAM
+  - Shared CPU
+  - $5 credit monthly
+  - **Cost**: ~$0-5/month (depends on usage)
 
-- **Total**: < $0.02/day (about $0.50/month for heavy use!)
+- **Vercel** (Companion UI): Free tier
+  - 100 GB bandwidth
+  - Unlimited deployments
+  - **Cost**: $0
+
+- **Total**: ~$3.60-8.60/month for active daily use
 
 ## Getting Help
 

@@ -16,11 +16,12 @@ I've successfully created a **working proof-of-concept** smart glasses app that 
 
 ### Core Components
 
-1. **File Storage Client** (`fileStorageClient.ts`)
-   - Local JSON file storage for person data
-   - Fast and reliable storage operations
+1. **Supabase Storage Client** (`supabaseStorageClient.ts`)
+   - Cloud PostgreSQL database storage for person data
+   - Fast and reliable storage with connection pooling
    - Handles conversation summaries and topics
    - Search functionality for finding people
+   - Multi-device synchronization
 
 2. **Name Extraction Service** (`nameExtractionService.ts`)
    - OpenAI GPT-4o-mini integration
@@ -34,16 +35,22 @@ I've successfully created a **working proof-of-concept** smart glasses app that 
    - Manages speaker recognition
    - Handles session lifecycle
 
-4. **Speaker Diarization Service** (`diarizationService.ts`)
-   - AssemblyAI integration (ready for Phase 2)
-   - Real-time and batch processing support
-   - Prepared for true multi-speaker support
+4. **OpenAI Transcription Service** (`openaiTranscriptionService.ts`)
+   - Real-time speech-to-text using gpt-4o-transcribe-diarize
+   - Speaker identification and diarization
+   - Voice reference extraction for future matching
 
 5. **Main Application** (`index.ts`)
    - MentraOS SDK integration
    - Real-time transcription handling
    - Display management for glasses
    - Session and event management
+
+6. **Companion Web UI** (`webserver.ts`, `public/`)
+   - Web-based interface for managing contacts
+   - REST API for CRUD operations
+   - MentraOS authentication integration
+   - Deployable to Vercel
 
 ### Documentation
 
@@ -93,10 +100,11 @@ I've successfully created a **working proof-of-concept** smart glasses app that 
    - Speaker matching logic
 
 💾 **Memory Persistence**
-   - MCP server integration
-   - Structured person data
-   - Conversation history
-   - Topic tracking
+   - Supabase PostgreSQL database
+   - Structured person data with JSONB fields
+   - Full conversation history
+   - Topic tracking and search
+   - Multi-device synchronization
 
 🎨 **Clean Architecture**
    - Service-oriented design
@@ -159,21 +167,34 @@ smartglasses-memory-app/
 │   ├── index.ts (224 lines)
 │   │   └── Main MentraOS app with session handling
 │   │
+│   ├── webserver.ts
+│   │   └── Companion UI web server with REST API
+│   │
 │   └── services/
-│       ├── fileStorageClient.ts
-│       │   └── Local JSON file storage
+│       ├── supabaseStorageClient.ts
+│       │   └── Supabase PostgreSQL storage
 │       │
 │       ├── nameExtractionService.ts (178 lines)
 │       │   └── OpenAI GPT-4o-mini for name extraction & summarization
 │       │
-│       ├── diarizationService.ts (105 lines)
-│       │   └── AssemblyAI integration (future use)
+│       ├── openaiTranscriptionService.ts
+│       │   └── Real-time transcription with speaker diarization
 │       │
 │       └── conversationManager.ts (208 lines)
 │           └── Business logic orchestration
 │
+├── public/
+│   ├── index.html
+│   ├── css/
+│   └── js/
+│       └── app.js
+│
+├── supabase/
+│   └── migrations/
+│
 ├── package.json
 ├── tsconfig.json
+├── railway.json
 ├── .env.example
 ├── README.md (300 lines)
 ├── QUICKSTART.md
@@ -244,9 +265,9 @@ smartglasses-memory-app/
    - **Solution**: Reduce interval or use real-time processing
 
 3. **Memory Search Simplicity**
-   - Basic name matching
-   - No fuzzy search
-   - **Solution**: Implement fuzzy search in FileStorageClient
+   - Basic name matching via SQL
+   - Case-insensitive search available
+   - **Solution**: Implement full-text search with Supabase
 
 4. **No Voice Biometrics**
    - Can't identify speakers by voice
@@ -340,9 +361,9 @@ These are prepared but not implemented:
 
 **Common Issues**:
 - Names not detected → Check OpenAI API key
-- Not persisting → Check file permissions on ./data/
+- Not persisting → Check Supabase connection and credentials
 - No transcription → Check microphone permission
-- Display not showing → Check ngrok connection
+- Display not showing → Check Railway deployment or ngrok connection (local)
 
 ## 💰 Cost Analysis
 
@@ -354,17 +375,21 @@ Assuming 10 conversations, 5 minutes each:
 - Name extractions: 10 × $0.0003 = $0.003
 - Summaries: 10 × $0.001 = $0.010
 - Speaker matching: 10 × $0.0002 = $0.002
-- **Subtotal**: ~$0.015/day
+- **Subtotal**: ~$0.12/day
 
-**AssemblyAI** (when implemented):
-- 50 minutes audio × $0.02/hr = $0.017/day
-- **Subtotal**: ~$0.02/day
+**Supabase**:
+- Free tier: 500MB database, 1GB storage, 2GB bandwidth
+- **Subtotal**: $0 (Free tier sufficient for personal use)
 
-**Storage**:
-- Local file storage (free)
+**Railway**:
+- Free tier: $5 credit monthly
+- **Subtotal**: ~$0-5/month (depends on usage)
+
+**Vercel** (Companion UI):
+- Free tier: 100GB bandwidth, unlimited deployments
 - **Subtotal**: $0
 
-**Total**: ~$0.035/day = **~$1/month** for active use
+**Total**: ~$3.60-8.60/month for active daily use
 
 ### Cost Optimization
 
@@ -465,22 +490,28 @@ Must implement:
 ## 📚 Technologies Used
 
 ### Core Stack
-- **Node.js 20.15.1**: Runtime environment
+- **Bun/Node.js 20+**: Runtime environment
 - **TypeScript 5.0**: Type-safe development
 - **MentraOS SDK**: Smart glasses integration
-- **Express 4.21**: Web server (via MentraOS)
+- **Express 4.21**: Web server for companion UI
 
 ### AI & ML
+- **OpenAI gpt-4o-transcribe-diarize**: Real-time transcription with speaker detection
 - **OpenAI GPT-4o-mini**: Name extraction & summarization
-- **AssemblyAI**: Speech-to-text & diarization (prepared)
 
-### Storage
-- **Local JSON Files**: Fast, simple file-based storage
+### Storage & Database
+- **Supabase**: PostgreSQL database with authentication
+- **Row-level Security**: Built-in data protection
+
+### Deployment & Hosting
+- **Railway**: Backend app hosting with auto-deploy
+- **Vercel**: Companion UI hosting
+- **GitHub Actions**: CI/CD pipeline (optional)
 
 ### Development
 - **tsx**: TypeScript execution
-- **npm**: Package management
-- **ngrok**: Local development tunneling
+- **npm/bun**: Package management
+- **ngrok**: Local development tunneling (optional)
 
 ## 🎉 Success Criteria - All Met!
 
@@ -524,12 +555,12 @@ This project leverages excellent open-source and commercial tools:
 3. Enhance memory search
 4. Add custom features
 
-### To Deploy (1 day):
-1. Get permanent hosting (AWS/Heroku/etc)
-2. Set up proper domain
-3. Implement security measures
-4. Add monitoring and logging
-5. Test extensively
+### To Deploy (1 hour):
+1. Deploy to Railway (main app): `railway up`
+2. Deploy to Vercel (companion UI): `vercel`
+3. Configure environment variables in dashboards
+4. Update MentraOS console with Railway URL
+5. Test with glasses
 
 ## 🐛 Known Issues & Workarounds
 

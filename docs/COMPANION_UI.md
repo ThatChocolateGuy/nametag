@@ -190,8 +190,8 @@ Get storage statistics
   "success": true,
   "stats": {
     "totalPeople": 10,
-    "filePath": "./data/memories.json",
-    "fileSize": 12345,
+    "storageType": "Supabase PostgreSQL",
+    "databaseSize": "1.2 MB",
     "totalConversations": 25,
     "peopleWithVoices": 8,
     "averageConversationsPerPerson": "2.5"
@@ -231,6 +231,10 @@ COOKIE_SECRET=your-secret-key-here
 # Required (already in .env for main app)
 MENTRAOS_API_KEY=your_api_key
 PACKAGE_NAME=your_package_name
+
+# Supabase Configuration (REQUIRED)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your_anon_key_here
 ```
 
 ### Port Configuration
@@ -243,7 +247,30 @@ This allows both to run simultaneously.
 
 ## Running Both Services
 
-### Option 1: Separate Terminals
+### Production (Recommended)
+
+**Main App**: Deployed to Railway
+- Automatically running at your Railway URL
+- Connect glasses via MentraOS console
+
+**Companion UI**: Deploy to Vercel
+```bash
+# Deploy companion UI
+cd smartglasses-memory-app
+vercel
+
+# Set environment variables in Vercel dashboard:
+# - SUPABASE_URL
+# - SUPABASE_KEY
+# - MENTRAOS_API_KEY
+# - COOKIE_SECRET
+```
+
+**Access**: Visit your Vercel URL to manage contacts from anywhere
+
+### Local Development
+
+#### Option 1: Separate Terminals
 
 ```bash
 # Terminal 1: Main app for glasses
@@ -253,11 +280,11 @@ bun run dev
 # Terminal 2: Companion UI
 bun run dev:web
 
-# Terminal 3: ngrok (for main app only)
-ngrok http --url=your-domain.ngrok-free.app 3000
+# Terminal 3: ngrok (optional, for remote testing)
+ngrok http 3000
 ```
 
-### Option 2: Background Processes (Linux/Mac)
+#### Option 2: Background Processes (Linux/Mac)
 
 ```bash
 # Start main app in background
@@ -265,9 +292,6 @@ bun run dev &
 
 # Start companion UI in background
 bun run dev:web &
-
-# Start ngrok
-ngrok http --url=your-domain.ngrok-free.app 3000
 ```
 
 ## Security Considerations
@@ -332,35 +356,36 @@ WEB_PORT=3002 bun run dev:web
 ### Data not showing
 
 **Check**:
-1. Main app has created data in `./data/memories.json`
-2. File permissions are correct
-3. Main app and web server use same data directory
+1. Supabase connection is working
+2. `SUPABASE_URL` and `SUPABASE_KEY` are set correctly
+3. Database tables exist (run migrations)
+4. Network connectivity to Supabase
 
 **Solution**:
 ```bash
-# Verify data file exists
-ls -la data/memories.json
+# Test Supabase connection
+curl https://your-project.supabase.co/rest/v1/ \
+  -H "apikey: your_anon_key"
 
-# Check contents
-cat data/memories.json
+# Run database migrations
+npx supabase db push
+
+# Check Supabase dashboard for data
 ```
 
 ### Changes not saving
 
 **Check**:
-1. Write permissions on `./data/` directory
-2. Disk space available
-3. No file locks
+1. Supabase connection is stable
+2. API keys have write permissions
+3. No row-level security blocking writes
+4. Database isn't at storage limit
 
 **Solution**:
-```bash
-# Fix permissions (Linux/Mac)
-chmod 755 data/
-chmod 644 data/memories.json
-
-# Check disk space
-df -h
-```
+1. Verify API key permissions in Supabase dashboard
+2. Check Supabase logs for errors
+3. Review row-level security policies
+4. Check database usage and limits
 
 ## Development
 
@@ -369,13 +394,17 @@ df -h
 ```
 smartglasses-memory-app/
 ├── src/
-│   └── webserver.ts          # Express server + API routes
+│   ├── webserver.ts          # Express server + API routes
+│   └── services/
+│       └── supabaseStorageClient.ts  # Database connection
 ├── public/
 │   ├── index.html            # Main UI
 │   ├── css/
 │   │   └── style.css         # Styles
 │   └── js/
 │       └── app.js            # Frontend logic
+├── supabase/
+│   └── migrations/           # Database schema
 └── docs/
     └── COMPANION_UI.md       # This file
 ```
@@ -435,9 +464,9 @@ Update HTML in `public/index.html` as needed.
 
 ### Performance
 
-- Search is client-side (fast for < 1000 people)
-- Conversation history is paginated in UI (loads all but displays efficiently)
-- Export feature works well up to ~10MB of data
+- Search is server-side (SQL query, fast for any number of people)
+- Conversation history loaded from database with pagination support
+- Export feature works efficiently with Supabase streaming
 
 ### Data Management
 
@@ -447,9 +476,11 @@ Update HTML in `public/index.html` as needed.
 
 ### Privacy
 
-- Companion UI runs locally (no cloud sync)
-- Data never leaves your machine unless you export it
-- Delete people to remove all their data
+- Data stored securely in Supabase with encryption at rest
+- Row-level security policies protect your data
+- Only accessible with your authentication credentials
+- Delete people to permanently remove all their data
+- Automatic backups for data recovery
 
 ## Future Enhancements
 
