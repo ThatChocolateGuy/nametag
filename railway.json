@@ -6,7 +6,8 @@
       "src/**",
       "package.json",
       "bun.lockb",
-      "yarn.lock"
+      "yarn.lock",
+      "railway.json"
     ]
   },
   "deploy": {
