@@ -103,6 +103,26 @@ const requireStorage: RequestHandler = (req, res, next): void => {
 // API Routes
 
 /**
+ * GET /api/auth/status
+ * Check authentication status (for debugging)
+ */
+app.get('/api/auth/status', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+
+  res.json({
+    success: true,
+    authenticated: !!authReq.authUserId,
+    userId: authReq.authUserId || null,
+    hasSession: !!authReq.activeSession,
+    debug: {
+      cookieSecret: COOKIE_SECRET.substring(0, 10) + '...',
+      packageName: PACKAGE_NAME,
+      hasApiKey: !!MENTRAOS_API_KEY
+    }
+  });
+});
+
+/**
  * GET /api/people
  * Get all stored people for the authenticated user
  */
@@ -342,8 +362,17 @@ app.get('/api/export', authMiddleware as RequestHandler, requireStorage, async (
   }
 });
 
-// Serve index.html for root and any unmatched routes (SPA fallback)
-app.get('*', (req: Request, res: Response) => {
+// Serve index.html for root route (with authentication)
+app.get('/', authMiddleware as RequestHandler, (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+
+  // Auth middleware will handle token exchange and set cookie
+  // Just serve the HTML - the cookie will be used for API calls
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+// Serve index.html for any unmatched routes (SPA fallback, also with auth)
+app.get('*', authMiddleware as RequestHandler, (req: Request, res: Response) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
