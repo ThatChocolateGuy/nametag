@@ -241,7 +241,7 @@ class MemoryGlassesApp extends AppServer {
             this.indicatorRestartTimeout = undefined;
           }
           
-          const message = `Nice to meet you,\n${person.name}!`;
+          const message = `Remembered:\n${person.name}`;
 
           // Use scrolling for long names
           const displayDuration = this.startScrollingText(session, message, 3000);
