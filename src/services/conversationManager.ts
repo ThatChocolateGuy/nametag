@@ -4,9 +4,10 @@ import { OpenAITranscriptionService } from './openaiTranscriptionService';
 
 // Storage interface that both MemoryClient and FileStorageClient implement
 export interface IStorageClient {
-  getPerson(id: string): Promise<Person | null>;
-  findPersonByName(name: string): Promise<Person | null>;
+  getPerson(id: string, userId: string): Promise<Person | null>;
+  findPersonByName(name: string, userId: string): Promise<Person | null>;
   storePerson(person: Person): Promise<void>;
+  getAllPeople(userId: string): Promise<Person[]>;
 }
 
 export interface ConversationBuffer {
@@ -18,6 +19,7 @@ export class ConversationManager {
   private memoryClient: IStorageClient;
   private nameExtractor: NameExtractionService;
   private transcriptionService?: OpenAITranscriptionService;
+  private userId: string;  // MentraOS user ID for data isolation
   private conversationBuffer: ConversationBuffer[] = [];
   private readonly bufferMaxSize = 20; // Keep last 20 utterances
   private readonly nameCheckInterval = 10; // Check for names every 10 utterances
@@ -30,11 +32,13 @@ export class ConversationManager {
   constructor(
     memoryClient: IStorageClient,
     nameExtractor: NameExtractionService,
-    transcriptionService?: OpenAITranscriptionService
+    transcriptionService: OpenAITranscriptionService | undefined,
+    userId: string
   ) {
     this.memoryClient = memoryClient;
     this.nameExtractor = nameExtractor;
     this.transcriptionService = transcriptionService;
+    this.userId = userId;
   }
 
   /**
@@ -93,7 +97,7 @@ export class ConversationManager {
       // Check if speaker is recognized
       const recognizedName = this.speakerNames.get(speaker);
       if (!recognizedName) {
-        const person = await this.memoryClient.getPerson(speaker);
+        const person = await this.memoryClient.getPerson(speaker, this.userId);
         if (person) {
           this.speakerNames.set(speaker, person.name);
           return {
@@ -149,14 +153,14 @@ export class ConversationManager {
         }
 
         // Check if we already know this person by name
-        const existingPerson = await this.memoryClient.findPersonByName(extracted.name);
+        const existingPerson = await this.memoryClient.findPersonByName(extracted.name, this.userId);
 
         if (existingPerson) {
           // Known person - update their speaker ID for this session
           existingPerson.speakerId = speakerId;
           existingPerson.lastMet = new Date();
           await this.memoryClient.storePerson(existingPerson);
-          
+
           this.speakerNames.set(speakerId, extracted.name);
           console.log(`✓ Recognized returning person: ${extracted.name} (Speaker ${speakerId})`);
         } else {
@@ -164,6 +168,7 @@ export class ConversationManager {
           const newPerson: Person = {
             name: extracted.name,
             speakerId: speakerId,
+            userId: this.userId,
             conversationHistory: [],
             lastMet: new Date()
           };
@@ -172,7 +177,7 @@ export class ConversationManager {
           if (this.transcriptionService) {
             console.log(`🎤 Extracting voice clip for ${extracted.name}...`);
             const voiceClip = await this.transcriptionService.extractRecentVoiceClip(7000); // 7 seconds
-            
+
             if (voiceClip) {
               newPerson.voiceReference = voiceClip;
               console.log(`✓ Voice clip extracted for ${extracted.name}`);
@@ -296,11 +301,11 @@ export class ConversationManager {
 
       // Update all people involved in the conversation
       for (const [speakerId, name] of this.speakerNames.entries()) {
-        const person = await this.memoryClient.getPerson(speakerId);
+        const person = await this.memoryClient.getPerson(speakerId, this.userId);
         if (person) {
           // Add to conversation history
           const updatedHistory = [...(person.conversationHistory || []), conversationEntry];
-          
+
           // Update with latest conversation info (for backward compatibility)
           await this.memoryClient.storePerson({
             ...person,
@@ -334,7 +339,7 @@ export class ConversationManager {
   async getSpeakerContext(speaker: string): Promise<string> {
     const name = this.speakerNames.get(speaker);
     if (!name) {
-      const person = await this.memoryClient.getPerson(speaker);
+      const person = await this.memoryClient.getPerson(speaker, this.userId);
       if (person) {
         this.speakerNames.set(speaker, person.name);
         return this.formatPersonContext(person);
@@ -342,7 +347,7 @@ export class ConversationManager {
       return 'Unknown speaker';
     }
 
-    const person = await this.memoryClient.getPerson(speaker);
+    const person = await this.memoryClient.getPerson(speaker, this.userId);
     if (!person) return name;
 
     return this.formatPersonContext(person);

@@ -11,6 +11,7 @@ export interface ConversationEntry {
 export interface Person {
   name: string;
   speakerId: string;
+  userId: string;  // MentraOS user ID for data isolation
   voiceReference?: string;  // Base64 encoded audio clip (2-10 seconds)
   conversationHistory: ConversationEntry[];  // Full history of all conversations
   lastConversation?: string;  // Deprecated - kept for backward compatibility
@@ -22,6 +23,7 @@ interface DatabasePerson {
   id: string;
   name: string;
   speaker_id: string;
+  user_id: string;
   voice_reference?: string;
   last_met?: string;
   created_at: string;
@@ -31,6 +33,7 @@ interface DatabasePerson {
 interface DatabaseConversationEntry {
   id: string;
   person_id: string;
+  user_id: string;
   date: string;
   transcript: string;
   topics: string[];
@@ -141,6 +144,7 @@ export class SupabaseStorageClient {
     return {
       name: dbPerson.name,
       speakerId: dbPerson.speaker_id,
+      userId: dbPerson.user_id,
       voiceReference: dbPerson.voice_reference,
       conversationHistory,
       lastMet: dbPerson.last_met ? new Date(dbPerson.last_met) : undefined,
@@ -155,11 +159,12 @@ export class SupabaseStorageClient {
    */
   async storePerson(person: Person): Promise<void> {
     try {
-      // Check if person already exists
+      // Check if person already exists (name must be unique per user)
       const { data: existing } = await this.supabase
         .from('people')
         .select('id, speaker_id')
         .eq('name', person.name)
+        .eq('user_id', person.userId)
         .single();
 
       let personId: string;
@@ -188,6 +193,7 @@ export class SupabaseStorageClient {
           .insert({
             name: person.name,
             speaker_id: person.speakerId,
+            user_id: person.userId,
             voice_reference: person.voiceReference,
             last_met: person.lastMet?.toISOString() || new Date().toISOString()
           })
@@ -211,6 +217,7 @@ export class SupabaseStorageClient {
         // Insert new conversations
         const conversationInserts = person.conversationHistory.map(conv => ({
           person_id: personId,
+          user_id: person.userId,
           date: conv.date.toISOString(),
           transcript: conv.transcript,
           topics: conv.topics,
@@ -233,23 +240,25 @@ export class SupabaseStorageClient {
   }
 
   /**
-   * Retrieve a person by speaker ID or name
+   * Retrieve a person by speaker ID or name (filtered by userId)
    */
-  async getPerson(speakerIdOrName: string): Promise<Person | null> {
+  async getPerson(speakerIdOrName: string, userId: string): Promise<Person | null> {
     try {
-      // Try to find by speaker ID first, then by name
+      // Try to find by speaker ID first, then by name (always filter by userId)
       let { data: dbPerson } = await this.supabase
         .from('people')
         .select('*')
         .eq('speaker_id', speakerIdOrName)
+        .eq('user_id', userId)
         .single();
 
       if (!dbPerson) {
-        // Try by name (case-insensitive)
+        // Try by name (case-insensitive, still filter by userId)
         const { data } = await this.supabase
           .from('people')
           .select('*')
           .ilike('name', speakerIdOrName)
+          .eq('user_id', userId)
           .single();
 
         dbPerson = data;
@@ -265,14 +274,15 @@ export class SupabaseStorageClient {
   }
 
   /**
-   * Search for a person by name (case-insensitive)
+   * Search for a person by name (case-insensitive, filtered by userId)
    */
-  async findPersonByName(name: string): Promise<Person | null> {
+  async findPersonByName(name: string, userId: string): Promise<Person | null> {
     try {
       const { data: dbPerson } = await this.supabase
         .from('people')
         .select('*')
         .ilike('name', name)
+        .eq('user_id', userId)
         .single();
 
       if (!dbPerson) return null;
@@ -285,13 +295,14 @@ export class SupabaseStorageClient {
   }
 
   /**
-   * Get all stored people
+   * Get all stored people for a specific user
    */
-  async getAllPeople(): Promise<Person[]> {
+  async getAllPeople(userId: string): Promise<Person[]> {
     try {
       const { data: dbPeople, error } = await this.supabase
         .from('people')
         .select('*')
+        .eq('user_id', userId)
         .order('last_met', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
@@ -310,18 +321,19 @@ export class SupabaseStorageClient {
   }
 
   /**
-   * Delete a person by name
+   * Delete a person by name (filtered by userId)
    */
-  async deletePerson(name: string): Promise<boolean> {
+  async deletePerson(name: string, userId: string): Promise<boolean> {
     try {
       const { error } = await this.supabase
         .from('people')
         .delete()
-        .ilike('name', name);
+        .ilike('name', name)
+        .eq('user_id', userId);
 
       if (error) throw error;
 
-      console.log(`Deleted person: ${name}`);
+      console.log(`Deleted person: ${name} (user: ${userId})`);
       return true;
     } catch (error) {
       console.error('Error deleting person:', error);
@@ -362,9 +374,9 @@ export class SupabaseStorageClient {
   }
 
   /**
-   * Get storage statistics (async version)
+   * Get storage statistics for a specific user (async version)
    */
-  async getStatsAsync(): Promise<{
+  async getStatsAsync(userId: string): Promise<{
     totalPeople: number;
     totalConversations: number;
     peopleWithVoices: number;
@@ -375,6 +387,7 @@ export class SupabaseStorageClient {
       const { data, error } = await this.supabase
         .from('storage_stats')
         .select('*')
+        .eq('user_id', userId)
         .single();
 
       if (error) throw error;
@@ -404,11 +417,11 @@ export class SupabaseStorageClient {
   }
 
   /**
-   * Export storage to JSON string
+   * Export storage to JSON string for a specific user
    */
-  async exportData(): Promise<string> {
+  async exportData(userId: string): Promise<string> {
     try {
-      const people = await this.getAllPeople();
+      const people = await this.getAllPeople(userId);
       const exportData = {
         people: people.reduce((acc, person) => {
           const key = `person_${person.name.toLowerCase().replace(/\s+/g, '_')}`;

@@ -6,7 +6,7 @@ if (process.env.VERCEL !== '1') {
 import express, { Request, Response, RequestHandler } from 'express';
 import path from 'path';
 import { SupabaseStorageClient, Person } from './services/supabaseStorageClient';
-import { createAuthMiddleware } from '@mentra/sdk';
+import { createAuthMiddleware, AuthenticatedRequest } from '@mentra/sdk';
 
 // Environment variables - validate they exist
 const MENTRAOS_API_KEY = process.env.MENTRAOS_API_KEY;
@@ -104,11 +104,19 @@ const requireStorage: RequestHandler = (req, res, next): void => {
 
 /**
  * GET /api/people
- * Get all stored people
+ * Get all stored people for the authenticated user
  */
 app.get('/api/people', authMiddleware as RequestHandler, requireStorage, async (req: Request, res: Response) => {
   try {
-    const people = await storageClient!.getAllPeople();
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.authUserId;
+
+    if (!userId) {
+      res.status(401).json({ success: false, error: 'Not authenticated' });
+      return;
+    }
+
+    const people = await storageClient!.getAllPeople(userId);
 
     // Sort by most recent conversation
     const sorted = people.sort((a, b) => {
@@ -126,12 +134,20 @@ app.get('/api/people', authMiddleware as RequestHandler, requireStorage, async (
 
 /**
  * GET /api/people/:name
- * Get a specific person by name
+ * Get a specific person by name (user-scoped)
  */
 app.get('/api/people/:name', authMiddleware as RequestHandler, requireStorage, async (req: Request, res: Response): Promise<void> => {
   try {
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.authUserId;
+
+    if (!userId) {
+      res.status(401).json({ success: false, error: 'Not authenticated' });
+      return;
+    }
+
     const { name } = req.params;
-    const person = await storageClient!.findPersonByName(name);
+    const person = await storageClient!.findPersonByName(name, userId);
 
     if (!person) {
       res.status(404).json({ success: false, error: 'Person not found' });
@@ -147,12 +163,20 @@ app.get('/api/people/:name', authMiddleware as RequestHandler, requireStorage, a
 
 /**
  * PUT /api/people/:name
- * Update a person's information
+ * Update a person's information (user-scoped)
  */
 app.put('/api/people/:name', authMiddleware as RequestHandler, requireStorage, async (req: Request, res: Response): Promise<void> => {
   try {
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.authUserId;
+
+    if (!userId) {
+      res.status(401).json({ success: false, error: 'Not authenticated' });
+      return;
+    }
+
     const { name } = req.params;
-    const person = await storageClient!.findPersonByName(name);
+    const person = await storageClient!.findPersonByName(name, userId);
 
     if (!person) {
       res.status(404).json({ success: false, error: 'Person not found' });
@@ -177,12 +201,20 @@ app.put('/api/people/:name', authMiddleware as RequestHandler, requireStorage, a
 
 /**
  * DELETE /api/people/:name
- * Delete a person
+ * Delete a person (user-scoped)
  */
 app.delete('/api/people/:name', authMiddleware as RequestHandler, requireStorage, async (req: Request, res: Response): Promise<void> => {
   try {
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.authUserId;
+
+    if (!userId) {
+      res.status(401).json({ success: false, error: 'Not authenticated' });
+      return;
+    }
+
     const { name } = req.params;
-    const success = await storageClient!.deletePerson(name);
+    const success = await storageClient!.deletePerson(name, userId);
 
     if (!success) {
       res.status(404).json({ success: false, error: 'Person not found' });
@@ -198,10 +230,18 @@ app.delete('/api/people/:name', authMiddleware as RequestHandler, requireStorage
 
 /**
  * POST /api/people/:name/notes
- * Add a note to a person's conversation history
+ * Add a note to a person's conversation history (user-scoped)
  */
 app.post('/api/people/:name/notes', authMiddleware as RequestHandler, requireStorage, async (req: Request, res: Response): Promise<void> => {
   try {
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.authUserId;
+
+    if (!userId) {
+      res.status(401).json({ success: false, error: 'Not authenticated' });
+      return;
+    }
+
     const { name } = req.params;
     const { note } = req.body;
 
@@ -210,7 +250,7 @@ app.post('/api/people/:name/notes', authMiddleware as RequestHandler, requireSto
       return;
     }
 
-    const person = await storageClient!.findPersonByName(name);
+    const person = await storageClient!.findPersonByName(name, userId);
 
     if (!person) {
       res.status(404).json({ success: false, error: 'Person not found' });
@@ -238,12 +278,20 @@ app.post('/api/people/:name/notes', authMiddleware as RequestHandler, requireSto
 
 /**
  * GET /api/stats
- * Get storage statistics
+ * Get storage statistics for the authenticated user
  */
 app.get('/api/stats', authMiddleware as RequestHandler, requireStorage, async (req: Request, res: Response) => {
   try {
-    // Use async stats method from SupabaseStorageClient
-    const stats = await storageClient!.getStatsAsync();
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.authUserId;
+
+    if (!userId) {
+      res.status(401).json({ success: false, error: 'Not authenticated' });
+      return;
+    }
+
+    // Use async stats method from SupabaseStorageClient (user-scoped)
+    const stats = await storageClient!.getStatsAsync(userId);
 
     res.json({
       success: true,
@@ -257,14 +305,36 @@ app.get('/api/stats', authMiddleware as RequestHandler, requireStorage, async (r
 
 /**
  * GET /api/export
- * Export all data as JSON
+ * Export user's data as JSON
  */
 app.get('/api/export', authMiddleware as RequestHandler, requireStorage, async (req: Request, res: Response) => {
   try {
-    const data = await storageClient!.exportData();
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.authUserId;
+
+    if (!userId) {
+      res.status(401).json({ success: false, error: 'Not authenticated' });
+      return;
+    }
+
+    // Export only this user's data
+    const people = await storageClient!.getAllPeople(userId);
+    const exportData = {
+      people: people.reduce((acc, person) => {
+        const key = `person_${person.name.toLowerCase().replace(/\s+/g, '_')}`;
+        acc[key] = person;
+        return acc;
+      }, {} as { [key: string]: any }),
+      version: '2.0.0',
+      lastModified: new Date().toISOString(),
+      source: 'supabase',
+      userId: userId
+    };
+
+    const data = JSON.stringify(exportData, null, 2);
 
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="nametag-export-${Date.now()}.json"`);
+    res.setHeader('Content-Disposition', `attachment; filename="nametag-export-${userId}-${Date.now()}.json"`);
     res.send(data);
   } catch (error) {
     console.error('Error exporting data:', error);

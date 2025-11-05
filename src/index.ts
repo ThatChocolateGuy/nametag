@@ -27,6 +27,7 @@ class MemoryGlassesApp extends AppServer {
   private nameExtractor: NameExtractionService;
   private transcriptionService: OpenAITranscriptionService;
   private conversationManager?: ConversationManager;
+  private currentUserId?: string;  // MentraOS user ID for current session
   private sessionActive = false;
   private listeningIndicatorInterval?: NodeJS.Timeout;
   private scrollingTextInterval?: NodeJS.Timeout;
@@ -61,12 +62,14 @@ class MemoryGlassesApp extends AppServer {
 
     this.sessionActive = true;
     this.currentSession = session;
+    this.currentUserId = userId;  // Store userId for this session
 
-    // Create conversation manager for this session
+    // Create conversation manager for this session (with userId for data isolation)
     this.conversationManager = new ConversationManager(
       this.memoryClient,
       this.nameExtractor,
-      this.transcriptionService  // Pass transcription service for voice clip extraction
+      this.transcriptionService,  // Pass transcription service for voice clip extraction
+      userId  // Pass userId for user-scoped data access
     );
 
     // Show welcome message
@@ -81,8 +84,8 @@ class MemoryGlassesApp extends AppServer {
     // Start listening indicator (battery-efficient, 2-second interval)
     this.startListeningIndicator(session);
 
-    // Get all known people for voice recognition
-    const knownPeople = await this.memoryClient.getAllPeople();
+    // Get all known people for voice recognition (filtered by userId)
+    const knownPeople = await this.memoryClient.getAllPeople(userId);
     const peopleWithVoices = knownPeople.filter(p => p.voiceReference);
     console.log(`✓ Loaded ${knownPeople.length} known people, ${peopleWithVoices.length} with voice profiles`);
     if (peopleWithVoices.length > 0) {
@@ -249,8 +252,8 @@ class MemoryGlassesApp extends AppServer {
           console.log(`\n✓ New person identified: ${person.name}`);
 
           // Update transcription service with new person's voice profile
-          if (person.voiceReference) {
-            const updatedPeople = await this.memoryClient.getAllPeople();
+          if (person.voiceReference && this.currentUserId) {
+            const updatedPeople = await this.memoryClient.getAllPeople(this.currentUserId);
             this.transcriptionService.updateKnownPeople(updatedPeople);
           }
 
@@ -318,6 +321,7 @@ class MemoryGlassesApp extends AppServer {
 
       this.conversationManager = undefined;
       this.currentSession = undefined;
+      this.currentUserId = undefined;
       console.log('✓ Session cleanup completed');
     });
   }
