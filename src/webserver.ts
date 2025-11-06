@@ -51,10 +51,42 @@ app.use((req, res, next): void => {
       storage: storageClient ? storageClient.isReady() : false,
       storageError: storageInitError ? storageInitError.message : null,
       auth: !authInitError,
-      authError: authInitError
+      authError: authInitError,
+      config: {
+        hasMentraOSApiKey: !!MENTRAOS_API_KEY,
+        hasPackageName: !!PACKAGE_NAME,
+        packageName: PACKAGE_NAME || 'NOT_SET',
+        hasCookieSecret: !!COOKIE_SECRET && COOKIE_SECRET !== 'change-this-secret-in-production',
+        nodeEnv: process.env.NODE_ENV || 'development'
+      }
     });
     return;
   }
+  next();
+});
+
+// Debug logging middleware (logs all requests for troubleshooting)
+app.use((req, res, next): void => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] ${req.method} ${req.path}`);
+
+  // Log query parameters (including aos_temp_token if present)
+  if (Object.keys(req.query).length > 0) {
+    const sanitizedQuery = { ...req.query };
+    if (sanitizedQuery.aos_temp_token) {
+      sanitizedQuery.aos_temp_token = `${String(sanitizedQuery.aos_temp_token).substring(0, 10)}...`;
+    }
+    console.log(`  Query params:`, sanitizedQuery);
+  }
+
+  // Log cookies (sanitized)
+  if (req.headers.cookie) {
+    const cookieNames = req.headers.cookie.split(';').map(c => c.trim().split('=')[0]);
+    console.log(`  Cookies present:`, cookieNames);
+  } else {
+    console.log(`  No cookies present`);
+  }
+
   next();
 });
 
@@ -109,6 +141,11 @@ const requireStorage: RequestHandler = (req, res, next): void => {
 app.get('/api/auth/status', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
   const authReq = req as AuthenticatedRequest;
 
+  console.log('✓ /api/auth/status called');
+  console.log(`  Authenticated: ${!!authReq.authUserId}`);
+  console.log(`  User ID: ${authReq.authUserId || 'NOT_SET'}`);
+  console.log(`  Has Session: ${!!authReq.activeSession}`);
+
   res.json({
     success: true,
     authenticated: !!authReq.authUserId,
@@ -117,7 +154,8 @@ app.get('/api/auth/status', authMiddleware as RequestHandler, async (req: Reques
     debug: {
       cookieSecret: COOKIE_SECRET.substring(0, 10) + '...',
       packageName: PACKAGE_NAME,
-      hasApiKey: !!MENTRAOS_API_KEY
+      hasApiKey: !!MENTRAOS_API_KEY,
+      hasCookieSecretSet: COOKIE_SECRET !== 'change-this-secret-in-production'
     }
   });
 });
@@ -366,6 +404,15 @@ app.get('/api/export', authMiddleware as RequestHandler, requireStorage, async (
 app.get('/', authMiddleware as RequestHandler, (req: Request, res: Response) => {
   const authReq = req as AuthenticatedRequest;
 
+  console.log('✓ Root route accessed');
+  console.log(`  Authenticated: ${!!authReq.authUserId}`);
+  console.log(`  User ID: ${authReq.authUserId || 'NOT_SET'}`);
+
+  if (!authReq.authUserId) {
+    console.error('⚠️ WARNING: Root route accessed but user not authenticated!');
+    console.error('  This should not happen - auth middleware should have returned 401');
+  }
+
   // Auth middleware will handle token exchange and set cookie
   // Just serve the HTML - the cookie will be used for API calls
   res.sendFile(path.join(__dirname, '../public/index.html'));
@@ -373,7 +420,38 @@ app.get('/', authMiddleware as RequestHandler, (req: Request, res: Response) => 
 
 // Serve index.html for any unmatched routes (SPA fallback, also with auth)
 app.get('*', authMiddleware as RequestHandler, (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+
+  console.log(`✓ Catch-all route accessed: ${req.path}`);
+  console.log(`  Authenticated: ${!!authReq.authUserId}`);
+
   res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+// Error handling middleware (must be last)
+app.use((err: any, req: Request, res: Response, next: any) => {
+  console.error('❌ Express error handler caught error:');
+  console.error('  Error:', err.message || err);
+  console.error('  Path:', req.path);
+  console.error('  Method:', req.method);
+
+  // If headers already sent, delegate to default error handler
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  // Return detailed error in development, generic in production
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+
+  res.status(err.status || 500).json({
+    success: false,
+    error: err.message || 'Internal server error',
+    details: isDevelopment ? {
+      stack: err.stack,
+      path: req.path,
+      method: req.method
+    } : undefined
+  });
 });
 
 // Start server (only when not running on Vercel)
