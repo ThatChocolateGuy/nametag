@@ -6,7 +6,11 @@ let currentPerson = null;
 const API_BASE = '/api';
 
 // Initialize App
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Check auth status first
+    await checkAuthStatus();
+
+    // Then load data
     loadPeople();
     loadStats();
     setupEventListeners();
@@ -42,10 +46,39 @@ function setupEventListeners() {
 }
 
 // API Functions
+async function checkAuthStatus() {
+    try {
+        const response = await fetch('/api/auth/status', {
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            showToast(`Auth check failed: HTTP ${response.status}`, 'error');
+            return false;
+        }
+
+        const data = await response.json();
+
+        if (!data.authenticated) {
+            showToast('Not authenticated. Please access through MentraOS app.', 'error');
+            console.error('Auth status:', data);
+            return false;
+        }
+
+        console.log('✓ Authenticated as user:', data.userId);
+        return true;
+    } catch (error) {
+        showToast(`Auth check error: ${error.message}`, 'error');
+        console.error('Auth check failed:', error);
+        return false;
+    }
+}
+
 async function apiRequest(endpoint, options = {}) {
     try {
         const response = await fetch(`${API_BASE}${endpoint}`, {
             ...options,
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
                 ...options.headers
@@ -53,13 +86,23 @@ async function apiRequest(endpoint, options = {}) {
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            let errorMsg = `HTTP ${response.status}`;
+            try {
+                const errorData = await response.json();
+                errorMsg += `: ${errorData.error || errorData.message || 'Unknown error'}`;
+                if (errorData.details) {
+                    console.error('Error details:', errorData.details);
+                }
+            } catch (e) {
+                errorMsg += ` - ${response.statusText}`;
+            }
+            throw new Error(errorMsg);
         }
 
         return await response.json();
     } catch (error) {
         console.error('API Error:', error);
-        showToast('An error occurred. Please try again.', 'error');
+        showToast(error.message, 'error');
         throw error;
     }
 }
