@@ -141,6 +141,120 @@ Return ONLY valid JSON, no explanation.`
   }
 
   /**
+   * Generate a conversation prompt/starter based on full conversation history
+   * Uses recent conversations for specific prompts, older ones for general prompts
+   * @param personName Name of the person
+   * @param conversationHistory Full conversation history (chronological, oldest first)
+   * @returns AI-generated conversation prompt (question format, < 140 chars)
+   */
+  async generateConversationPrompt(
+    personName: string,
+    conversationHistory: Array<{
+      date: Date;
+      transcript: string;
+      topics: string[];
+      keyPoints?: string[];
+    }>
+  ): Promise<string> {
+    try {
+      if (conversationHistory.length === 0) {
+        return `How have you been, ${personName}?`;
+      }
+
+      // Get most recent conversation
+      const mostRecent = conversationHistory[conversationHistory.length - 1];
+      const daysSinceLastConv = Math.floor(
+        (Date.now() - mostRecent.date.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      // Build context from all conversations
+      const allKeyPoints: string[] = [];
+      const allTopics: string[] = [];
+
+      for (const conv of conversationHistory) {
+        if (conv.keyPoints) {
+          allKeyPoints.push(...conv.keyPoints);
+        }
+        if (conv.topics) {
+          allTopics.push(...conv.topics);
+        }
+      }
+
+      // Create context string
+      const contextParts: string[] = [];
+      if (allKeyPoints.length > 0) {
+        contextParts.push(`Key points: ${allKeyPoints.join('; ')}`);
+      }
+      if (allTopics.length > 0) {
+        contextParts.push(`Topics: ${allTopics.join(', ')}`);
+      }
+
+      const context = contextParts.join('\n');
+
+      // Different prompts for recent vs older conversations
+      const isRecent = daysSinceLastConv <= 7;
+
+      const systemPrompt = isRecent
+        ? `You are generating a follow-up conversation starter based on RECENT conversations with ${personName}.
+Reference specific events or topics from the last week.
+Use present/recent tense. Be specific and thoughtful.
+Format as a single engaging question under 140 characters.
+Make it personal and show you remember details.
+
+Examples:
+"${personName} mentioned getting a new puppy last week. How is the puppy settling in?"
+"${personName} was stressed about the project deadline. How did it go?"
+"${personName} was planning a vacation to Italy. When are you leaving?"`
+        : `You are generating a conversation starter based on PAST conversations with ${personName}.
+Reference older topics but make them forward-looking.
+Use past tense for the reference, but ask about present/future.
+Format as a single engaging question under 140 characters.
+
+Examples:
+"${personName} mentioned learning guitar a while back. How's that going?"
+"${personName} talked about changing careers. Did you make any moves on that?"
+"You mentioned wanting to travel more. Have you taken any trips recently?"`;
+
+      const completion = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: `Generate a conversation prompt for ${personName}.\n\nConversation context:\n${context}\n\nDays since last conversation: ${daysSinceLastConv}`
+          }
+        ],
+        temperature: 0.8, // More creative for prompts
+        max_tokens: 60 // Keep it concise (140 chars ≈ 40-50 tokens)
+      });
+
+      let prompt = completion.choices[0]?.message?.content?.trim() || '';
+
+      // Remove quotes if AI added them
+      prompt = prompt.replace(/^["']|["']$/g, '');
+
+      // Ensure it's a reasonable length (truncate if needed)
+      if (prompt.length > 140) {
+        prompt = prompt.substring(0, 137) + '...';
+      }
+
+      // Fallback if empty
+      if (!prompt) {
+        return `How have things been going, ${personName}?`;
+      }
+
+      return prompt;
+    } catch (error) {
+      console.error('Error generating conversation prompt:', error);
+      // Fallback to a generic prompt
+      return `How have you been, ${personName}?`;
+    }
+  }
+
+  /**
    * Match speaker to known person by analyzing context
    */
   async matchSpeakerToPerson(

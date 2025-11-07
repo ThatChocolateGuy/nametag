@@ -17,6 +17,10 @@ export interface Person {
   lastConversation?: string;  // Deprecated - kept for backward compatibility
   lastTopics?: string[];      // Deprecated - kept for backward compatibility
   lastMet?: Date;
+  conversationPrompt?: string;  // AI-generated conversation starter
+  promptGeneratedDate?: Date;   // When prompt was last generated
+  promptShownCount?: number;     // Times prompt has been shown
+  lastPromptShown?: Date;        // Last time prompt was displayed
 }
 
 interface DatabasePerson {
@@ -26,6 +30,10 @@ interface DatabasePerson {
   user_id: string;
   voice_reference?: string;
   last_met?: string;
+  conversation_prompt?: string;
+  prompt_generated_date?: string;
+  prompt_shown_count?: number;
+  last_prompt_shown?: string;
   created_at: string;
   updated_at: string;
 }
@@ -150,7 +158,12 @@ export class SupabaseStorageClient {
       lastMet: dbPerson.last_met ? new Date(dbPerson.last_met) : undefined,
       // Deprecated fields for backward compatibility - get most recent conversation
       lastConversation: conversationHistory[conversationHistory.length - 1]?.transcript,
-      lastTopics: conversationHistory[conversationHistory.length - 1]?.topics
+      lastTopics: conversationHistory[conversationHistory.length - 1]?.topics,
+      // Conversation prompt fields
+      conversationPrompt: dbPerson.conversation_prompt,
+      promptGeneratedDate: dbPerson.prompt_generated_date ? new Date(dbPerson.prompt_generated_date) : undefined,
+      promptShownCount: dbPerson.prompt_shown_count,
+      lastPromptShown: dbPerson.last_prompt_shown ? new Date(dbPerson.last_prompt_shown) : undefined
     };
   }
 
@@ -175,12 +188,16 @@ export class SupabaseStorageClient {
           console.log(`✓ Updated ${person.name}'s speaker ID: ${existing.speaker_id} → ${person.speakerId}`);
         }
 
-        const { error: updateError } = await this.supabase
+        const { error: updateError} = await this.supabase
           .from('people')
           .update({
             speaker_id: person.speakerId,
             voice_reference: person.voiceReference,
-            last_met: person.lastMet?.toISOString() || new Date().toISOString()
+            last_met: person.lastMet?.toISOString() || new Date().toISOString(),
+            conversation_prompt: person.conversationPrompt,
+            prompt_generated_date: person.promptGeneratedDate?.toISOString(),
+            prompt_shown_count: person.promptShownCount,
+            last_prompt_shown: person.lastPromptShown?.toISOString()
           })
           .eq('id', existing.id);
 
@@ -195,7 +212,11 @@ export class SupabaseStorageClient {
             speaker_id: person.speakerId,
             user_id: person.userId,
             voice_reference: person.voiceReference,
-            last_met: person.lastMet?.toISOString() || new Date().toISOString()
+            last_met: person.lastMet?.toISOString() || new Date().toISOString(),
+            conversation_prompt: person.conversationPrompt,
+            prompt_generated_date: person.promptGeneratedDate?.toISOString(),
+            prompt_shown_count: person.promptShownCount || 0,
+            last_prompt_shown: person.lastPromptShown?.toISOString()
           })
           .select('id')
           .single();

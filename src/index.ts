@@ -168,48 +168,71 @@ class MemoryGlassesApp extends AppServer {
 
           lines.push(headerLine);
 
-          // Lines 2+: Context from last conversation (no truncation - scrolling will handle it)
-          if (person.conversationHistory && person.conversationHistory.length > 0) {
-            const lastConv = person.conversationHistory[person.conversationHistory.length - 1];
+          let displayDuration: number;
 
-            // Prioritize key points for quick, actionable context
-            if (lastConv.keyPoints && lastConv.keyPoints.length > 0) {
-              // Take up to 3 key points (full text, no truncation)
-              const points = lastConv.keyPoints.slice(0, 3);
+          // NEW PRIORITY: Check for conversation prompt first
+          if (this.shouldShowPrompt(person)) {
+            lines.push(''); // Blank line
+            lines.push(person.conversationPrompt!);
 
-              lines.push(''); // Blank line
-              points.forEach((point: string) => lines.push(`• ${point}`));
+            // Use VERTICAL scrolling for prompts
+            const message = lines.join('\n');
+            displayDuration = this.startVerticalScrollingText(session, message, 8000);
 
-            } else if (lastConv.transcript && lastConv.transcript !== 'Error generating summary') {
-              // Fallback to summary (full text)
+            // Update prompt tracking
+            person.promptShownCount = (person.promptShownCount || 0) + 1;
+            person.lastPromptShown = new Date();
+            await this.memoryClient!.storePerson(person);
+
+            console.log(`\n💬 Showing conversation prompt for ${person.name}`);
+            console.log(`  Prompt: "${person.conversationPrompt}"`);
+            console.log(`  Times shown: ${person.promptShownCount}`);
+          }
+          // FALLBACK: No prompt or prompt shown recently - show key points/summary
+          else {
+            // Lines 2+: Context from last conversation (no truncation - scrolling will handle it)
+            if (person.conversationHistory && person.conversationHistory.length > 0) {
+              const lastConv = person.conversationHistory[person.conversationHistory.length - 1];
+
+              // Prioritize key points for quick, actionable context
+              if (lastConv.keyPoints && lastConv.keyPoints.length > 0) {
+                // Take up to 3 key points (full text, no truncation)
+                const points = lastConv.keyPoints.slice(0, 3);
+
+                lines.push(''); // Blank line
+                points.forEach((point: string) => lines.push(`• ${point}`));
+
+              } else if (lastConv.transcript && lastConv.transcript !== 'Error generating summary') {
+                // Fallback to summary (full text)
+                lines.push('');
+                lines.push(lastConv.transcript);
+
+              } else if (lastConv.topics && lastConv.topics.length > 0) {
+                // Fallback to topics (full text)
+                lines.push('');
+                lastConv.topics.slice(0, 2).forEach((topic: string) => {
+                  lines.push(`• ${topic}`);
+                });
+              }
+            } else if (person.lastConversation) {
+              // Backward compatibility (full text)
               lines.push('');
-              lines.push(lastConv.transcript);
-
-            } else if (lastConv.topics && lastConv.topics.length > 0) {
-              // Fallback to topics (full text)
+              lines.push(person.lastConversation);
+            } else if (person.lastTopics && person.lastTopics.length > 0) {
+              // Backward compatibility (full text)
               lines.push('');
-              lastConv.topics.slice(0, 2).forEach((topic: string) => {
+              person.lastTopics.slice(0, 2).forEach((topic: string) => {
                 lines.push(`• ${topic}`);
               });
+            } else {
+              lines.push('');
+              lines.push('First conversation!');
             }
-          } else if (person.lastConversation) {
-            // Backward compatibility (full text)
-            lines.push('');
-            lines.push(person.lastConversation);
-          } else if (person.lastTopics && person.lastTopics.length > 0) {
-            // Backward compatibility (full text)
-            lines.push('');
-            person.lastTopics.slice(0, 2).forEach((topic: string) => {
-              lines.push(`• ${topic}`);
-            });
-          } else {
-            lines.push('');
-            lines.push('First conversation!');
-          }
 
-          // Use horizontal scrolling for long lines
-          const message = lines.join('\n');
-          const displayDuration = this.startScrollingText(session, message, 8000);
+            // Use horizontal scrolling for key points/summaries
+            const message = lines.join('\n');
+            displayDuration = this.startScrollingText(session, message, 8000);
+          }
 
           console.log(`\n✓ Recognized returning person: ${person.name}`);
           if (person.conversationHistory && person.conversationHistory.length > 0) {
@@ -376,6 +399,83 @@ class MemoryGlassesApp extends AppServer {
   }
 
   /**
+   * Check if we should show the conversation prompt for this person
+   * Returns true if prompt exists and hasn't been shown too recently
+   */
+  private shouldShowPrompt(person: any): boolean {
+    // No prompt available
+    if (!person.conversationPrompt) return false;
+
+    // Show prompt if never shown before
+    if (!person.lastPromptShown) return true;
+
+    // Don't show if shown within last 24 hours
+    const hoursSinceShown = (Date.now() - person.lastPromptShown.getTime()) / (1000 * 60 * 60);
+    if (hoursSinceShown < 24) return false;
+
+    // Don't spam - max 5 times per prompt
+    if ((person.promptShownCount || 0) >= 5) return false;
+
+    return true;
+  }
+
+  /**
+   * Wrap text to fit within line width (word-wrap algorithm)
+   * Breaks lines at spaces when possible, hard-breaks if necessary
+   * @param text Text to wrap
+   * @param lineWidth Maximum characters per line (default: 28)
+   * @returns Array of wrapped lines
+   */
+  private wrapText(text: string, lineWidth: number = 28): string[] {
+    const lines: string[] = [];
+
+    // Split by existing newlines first
+    const paragraphs = text.split('\n');
+
+    for (const paragraph of paragraphs) {
+      if (paragraph.length === 0) {
+        lines.push('');
+        continue;
+      }
+
+      if (paragraph.length <= lineWidth) {
+        lines.push(paragraph);
+        continue;
+      }
+
+      // Need to wrap this paragraph
+      let remaining = paragraph;
+
+      while (remaining.length > lineWidth) {
+        // Try to break at a space
+        let breakIndex = lineWidth;
+
+        // Look backward for a space
+        for (let i = lineWidth; i > lineWidth * 0.7; i--) {
+          if (remaining[i] === ' ') {
+            breakIndex = i;
+            break;
+          }
+        }
+
+        // Extract the line
+        const line = remaining.substring(0, breakIndex).trim();
+        lines.push(line);
+
+        // Continue with the rest
+        remaining = remaining.substring(breakIndex).trim();
+      }
+
+      // Add the final piece
+      if (remaining.length > 0) {
+        lines.push(remaining);
+      }
+    }
+
+    return lines;
+  }
+
+  /**
    * Start horizontal scrolling text display
    * Scrolls long lines that would otherwise be truncated
    * Duration is automatically calculated based on text length
@@ -507,6 +607,109 @@ class MemoryGlassesApp extends AppServer {
       this.scrollingTextInterval = undefined;
       console.log('✓ Scrolling text stopped');
     }
+  }
+
+  /**
+   * Start vertical scrolling text display (for conversation prompts)
+   * Wraps text to line width and scrolls vertically line-by-line
+   * @param session The active app session
+   * @param fullText Text to display (will be wrapped)
+   * @param minDurationMs Minimum display duration in milliseconds
+   * @param lineWidth Maximum characters per line (default: 28)
+   * @param visibleLines Number of lines visible at once (default: 4)
+   * @returns The actual duration in milliseconds that the text will display
+   */
+  private startVerticalScrollingText(
+    session: AppSession,
+    fullText: string,
+    minDurationMs: number = 5000,
+    lineWidth: number = 28,
+    visibleLines: number = 4
+  ): number {
+    // Stop any existing scrolling
+    this.stopScrollingText();
+
+    // Wrap text to line width
+    const wrappedLines = this.wrapText(fullText, lineWidth);
+
+    // If text fits in visible area, show it statically
+    if (wrappedLines.length <= visibleLines) {
+      session.layouts.showTextWall(wrappedLines.join('\n'), {
+        view: ViewType.MAIN,
+        durationMs: minDurationMs
+      });
+      return minDurationMs;
+    }
+
+    // Configure scrolling parameters
+    const pauseAtStart = 6; // 3 seconds (6 frames × 500ms)
+    const pauseAtEnd = 4;   // 2 seconds (4 frames × 500ms)
+    const scrollSpeed = 500; // 500ms per scroll step
+
+    // Calculate total scroll steps (each line is one step)
+    const scrollSteps = wrappedLines.length - visibleLines;
+
+    // Calculate total duration: start pause + (steps × speed) + end pause
+    const calculatedDuration = (pauseAtStart + scrollSteps + pauseAtEnd) * scrollSpeed;
+    const durationMs = Math.min(calculatedDuration, 20000); // 20 second cap
+
+    console.log(`✓ Starting vertical scroll (${(durationMs / 1000).toFixed(1)}s for ${scrollSteps} steps)`);
+
+    let currentStep = 0;
+    let pauseFrames = 0;
+
+    const scrollInterval = setInterval(() => {
+      if (!this.sessionActive || !this.currentSession) {
+        this.stopScrollingText();
+        return;
+      }
+
+      try {
+        // Calculate visible window
+        const startLine = Math.min(currentStep, scrollSteps);
+        const endLine = startLine + visibleLines;
+        const visibleText = wrappedLines.slice(startLine, endLine).join('\n');
+
+        session.layouts.showTextWall(visibleText, {
+          view: ViewType.MAIN,
+          durationMs: scrollSpeed + 200 // Slightly longer to prevent flicker
+        });
+
+        // Handle pausing at start
+        if (currentStep === 0 && pauseFrames < pauseAtStart) {
+          pauseFrames++;
+          return;
+        }
+
+        // Handle pausing at end
+        if (currentStep >= scrollSteps && pauseFrames < pauseAtStart + pauseAtEnd) {
+          pauseFrames++;
+          return;
+        }
+
+        // Advance one line
+        if (currentStep < scrollSteps) {
+          currentStep++;
+        } else {
+          // Loop back to start
+          currentStep = 0;
+          pauseFrames = 0;
+        }
+
+      } catch (error) {
+        console.error('Error updating vertical scrolling text:', error);
+        this.stopScrollingText();
+      }
+    }, scrollSpeed);
+
+    this.scrollingTextInterval = scrollInterval;
+
+    // Auto-stop after duration
+    setTimeout(() => {
+      this.stopScrollingText();
+    }, durationMs);
+
+    return durationMs;
   }
 }
 

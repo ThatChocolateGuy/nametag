@@ -315,6 +315,33 @@ export class ConversationManager {
             lastMet: new Date()
           });
 
+          // Generate new conversation prompt based on updated history
+          try {
+            console.log(`🤖 Generating conversation prompt for ${name}...`);
+            const newPrompt = await this.nameExtractor.generateConversationPrompt(
+              name,
+              updatedHistory
+            );
+
+            // Store person again with the new prompt
+            await this.memoryClient.storePerson({
+              ...person,
+              conversationHistory: updatedHistory,
+              lastConversation: summary.summary,
+              lastTopics: summary.mainTopics,
+              lastMet: new Date(),
+              conversationPrompt: newPrompt,
+              promptGeneratedDate: new Date(),
+              promptShownCount: 0,  // Reset count with new prompt
+              lastPromptShown: undefined  // Allow immediate showing
+            });
+
+            console.log(`✓ Generated prompt for ${name}: "${newPrompt.substring(0, 50)}${newPrompt.length > 50 ? '...' : ''}"`);
+          } catch (error) {
+            console.error(`⚠️  Failed to generate prompt for ${name}:`, error);
+            // Continue without prompt - not critical
+          }
+
           result.peopleUpdated.push(name);
           console.log(`✓ Updated ${name} with conversation summary (total: ${updatedHistory.length} conversations)`);
         }
