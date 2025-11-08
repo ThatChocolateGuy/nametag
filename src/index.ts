@@ -403,19 +403,46 @@ class MemoryGlassesApp extends AppServer {
    * Returns true if prompt exists and hasn't been shown too recently
    */
   private shouldShowPrompt(person: any): boolean {
+    console.log(`\n🔍 Checking if should show prompt for ${person.name}:`);
+    console.log(`  Has prompt: ${!!person.conversationPrompt}`);
+    console.log(`  Prompt: "${person.conversationPrompt?.substring(0, 50)}${person.conversationPrompt?.length > 50 ? '...' : ''}"`);
+    console.log(`  Last shown: ${person.lastPromptShown}`);
+    console.log(`  Show count: ${person.promptShownCount || 0}`);
+
     // No prompt available
-    if (!person.conversationPrompt) return false;
+    if (!person.conversationPrompt) {
+      console.log(`  ❌ No prompt available`);
+      return false;
+    }
 
     // Show prompt if never shown before
-    if (!person.lastPromptShown) return true;
+    if (!person.lastPromptShown) {
+      console.log(`  ✅ Never shown before - will show`);
+      return true;
+    }
+
+    // Convert to Date if it's a string
+    const lastShownDate = person.lastPromptShown instanceof Date 
+      ? person.lastPromptShown 
+      : new Date(person.lastPromptShown);
 
     // Don't show if shown within last 24 hours
-    const hoursSinceShown = (Date.now() - person.lastPromptShown.getTime()) / (1000 * 60 * 60);
-    if (hoursSinceShown < 24) return false;
+    const hoursSinceShown = (Date.now() - lastShownDate.getTime()) / (1000 * 60 * 60);
+    console.log(`  Hours since shown: ${hoursSinceShown.toFixed(1)}`);
+    
+    if (hoursSinceShown < 24) {
+      console.log(`  ❌ Shown recently (< 24h ago) - skipping`);
+      return false;
+    }
 
     // Don't spam - max 5 times per prompt
-    if ((person.promptShownCount || 0) >= 5) return false;
+    const shownCount = person.promptShownCount || 0;
+    if (shownCount >= 5) {
+      console.log(`  ❌ Shown max times (${shownCount}/5) - skipping`);
+      return false;
+    }
 
+    console.log(`  ✅ Will show prompt (${shownCount}/5 times, ${hoursSinceShown.toFixed(1)}h ago)`);
     return true;
   }
 
