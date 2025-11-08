@@ -196,8 +196,8 @@ export class SupabaseStorageClient {
             last_met: person.lastMet?.toISOString() || new Date().toISOString(),
             conversation_prompt: person.conversationPrompt,
             prompt_generated_date: person.promptGeneratedDate?.toISOString(),
-            prompt_shown_count: person.promptShownCount,
-            last_prompt_shown: person.lastPromptShown?.toISOString()
+            prompt_shown_count: person.promptShownCount ?? 0,
+            last_prompt_shown: person.lastPromptShown ? person.lastPromptShown.toISOString() : null
           })
           .eq('id', existing.id);
 
@@ -215,8 +215,8 @@ export class SupabaseStorageClient {
             last_met: person.lastMet?.toISOString() || new Date().toISOString(),
             conversation_prompt: person.conversationPrompt,
             prompt_generated_date: person.promptGeneratedDate?.toISOString(),
-            prompt_shown_count: person.promptShownCount || 0,
-            last_prompt_shown: person.lastPromptShown?.toISOString()
+            prompt_shown_count: person.promptShownCount ?? 0,
+            last_prompt_shown: person.lastPromptShown ? person.lastPromptShown.toISOString() : null
           })
           .select('id')
           .single();

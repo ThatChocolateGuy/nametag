@@ -229,9 +229,9 @@ class MemoryGlassesApp extends AppServer {
               lines.push('First conversation!');
             }
 
-            // Use horizontal scrolling for key points/summaries
+            // Use VERTICAL scrolling for all content (consistent experience)
             const message = lines.join('\n');
-            displayDuration = this.startScrollingText(session, message, 8000);
+            displayDuration = this.startVerticalScrollingText(session, message, 8000);
           }
 
           console.log(`\n✓ Recognized returning person: ${person.name}`);
