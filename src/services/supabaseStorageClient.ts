@@ -204,6 +204,9 @@ export class SupabaseStorageClient {
         if (updateError) throw updateError;
         
         // Log prompt tracking updates
+        if (person.conversationPrompt !== undefined) {
+          console.log(`  📝 DB Update: conversation_prompt="${person.conversationPrompt.substring(0, 60)}${person.conversationPrompt.length > 60 ? '...' : ''}"`);
+        }
         if (person.lastPromptShown !== undefined || person.promptShownCount !== undefined) {
           console.log(`  📊 DB Update: prompt_shown_count=${person.promptShownCount ?? 0}, last_prompt_shown=${person.lastPromptShown ? person.lastPromptShown.toISOString() : 'null'}`);
         }

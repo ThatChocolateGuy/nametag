@@ -323,10 +323,10 @@ export class ConversationManager {
               updatedHistory
             );
 
-            // Store person again with the new prompt
+            // Store person with the new prompt (use updatedHistory to avoid overwriting)
             await this.memoryClient.storePerson({
               ...person,
-              conversationHistory: updatedHistory,
+              conversationHistory: updatedHistory,  // Use the updated history, not old person.conversationHistory
               lastConversation: summary.summary,
               lastTopics: summary.mainTopics,
               lastMet: new Date(),
