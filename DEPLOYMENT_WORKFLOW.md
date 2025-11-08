@@ -16,7 +16,7 @@ Your Vercel deployment is **successfully running** with no ESM/CommonJS errors!
 Test your deployment anytime with one command:
 
 ```bash
-npm run test:deployment https://nametag-web-iv6nhsh4l-nem-ekpunobis-projects.vercel.app
+bun test:deployment https://nametag-web-iv6nhsh4l-nem-ekpunobis-projects.vercel.app
 ```
 
 **What it tests:**
@@ -33,7 +33,7 @@ npm run test:deployment https://nametag-web-iv6nhsh4l-nem-ekpunobis-projects.ver
 
 1. **Test Public URLs**
    ```bash
-   npm run test:deployment <your-url>
+   bun test:deployment <your-url>
    ```
    I can run this and interpret results
 
@@ -114,7 +114,7 @@ npm run test:deployment https://nametag-web-iv6nhsh4l-nem-ekpunobis-projects.ver
 
 **Option 1: Quick Test (You)**
 ```bash
-npm run test:deployment https://your-vercel-url
+bun test:deployment https://your-vercel-url
 ```
 Share the JSON output with me.
 
@@ -140,7 +140,7 @@ Share the JSON output with me.
 
 **You run:**
 ```bash
-npm run test:deployment https://your-vercel-url
+bun test:deployment https://your-vercel-url
 ```
 
 **If green checkmarks:**
@@ -200,7 +200,7 @@ npm run test:deployment https://your-vercel-url
   - @mentra/sdk@latest
 
 ### Files
-- `yarn.lock` - Dependency lock file (critical!)
+- `bun.lock` - Bun dependency lock file (critical!)
 - `vercel.json` - Vercel configuration
 - `api/index.ts` - Serverless function entry
 - `src/webserver.ts` - Express server
@@ -221,16 +221,16 @@ Required in Vercel dashboard:
 ### Development
 ```bash
 # Main app (G1 glasses)
-yarn dev
+bun run dev
 
 # Companion UI (local)
-yarn dev:web
+bun run dev:web
 
 # Test deployment
-npm run test:deployment <vercel-url>
+bun test:deployment <vercel-url>
 
 # Type check
-yarn lint
+bun run lint
 ```
 
 ### Deployment
@@ -244,7 +244,7 @@ git push
 # Wait 3-4 minutes
 
 # Test
-npm run test:deployment <url>
+bun test:deployment <url>
 ```
 
 ### Troubleshooting

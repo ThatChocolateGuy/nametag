@@ -3,7 +3,9 @@
 !/.env.example
 # Keep sample config available
 node_modules/
-bun.lock
+# Ignore npm/yarn lockfiles - we use Bun exclusively (bun.lock is tracked)
+package-lock.json
+yarn.lock
 .DS_Store
 *.log
 

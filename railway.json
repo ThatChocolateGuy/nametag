@@ -5,9 +5,7 @@
     "watchPatterns": [
       "src/**",
       "package.json",
-      "bun.lockb",
-      "yarn.lock",
-      "railway.json"
+      "bun.lock"
     ]
   },
   "deploy": {
