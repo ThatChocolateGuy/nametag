@@ -202,6 +202,12 @@ export class SupabaseStorageClient {
           .eq('id', existing.id);
 
         if (updateError) throw updateError;
+        
+        // Log prompt tracking updates
+        if (person.lastPromptShown !== undefined || person.promptShownCount !== undefined) {
+          console.log(`  📊 DB Update: prompt_shown_count=${person.promptShownCount ?? 0}, last_prompt_shown=${person.lastPromptShown ? person.lastPromptShown.toISOString() : 'null'}`);
+        }
+        
         personId = existing.id;
       } else {
         // Insert new person

@@ -182,11 +182,13 @@ class MemoryGlassesApp extends AppServer {
             // Update prompt tracking
             person.promptShownCount = (person.promptShownCount || 0) + 1;
             person.lastPromptShown = new Date();
-            await this.memoryClient!.storePerson(person);
-
+            
             console.log(`\n💬 Showing conversation prompt for ${person.name}`);
             console.log(`  Prompt: "${person.conversationPrompt}"`);
-            console.log(`  Times shown: ${person.promptShownCount}`);
+            console.log(`  Before store: lastPromptShown=${person.lastPromptShown.toISOString()}, count=${person.promptShownCount}`);
+            
+            await this.memoryClient!.storePerson(person);
+            console.log(`  ✓ Stored to database with updated tracking fields`);
           }
           // FALLBACK: No prompt or prompt shown recently - show key points/summary
           else {
