@@ -669,8 +669,8 @@ class MemoryGlassesApp extends AppServer {
     }
 
     // Configure scrolling parameters
-    const pauseAtStart = 6; // 3 seconds (6 frames × 500ms)
-    const pauseAtEnd = 4;   // 2 seconds (4 frames × 500ms)
+    const pauseAtStart = 6;  // 3 seconds (6 frames × 500ms)
+    const pauseAtEnd = 10;   // 5 seconds (10 frames × 500ms) - allow time to finish reading
     const scrollSpeed = 500; // 500ms per scroll step
 
     // Calculate total scroll steps (each line is one step)
