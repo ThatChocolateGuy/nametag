@@ -403,7 +403,7 @@ class MemoryGlassesApp extends AppServer {
    * Returns true if prompt exists and hasn't been shown too recently
    */
   private shouldShowPrompt(person: any): boolean {
-    console.log(`\n🔍 Checking if should show prompt for ${person.name}:`);
+    console.log(`\n🔍 Checking if prompt should be shown for ${person.name}:`);
     console.log(`  Has prompt: ${!!person.conversationPrompt}`);
     console.log(`  Prompt: "${person.conversationPrompt?.substring(0, 50)}${person.conversationPrompt?.length > 50 ? '...' : ''}"`);
     console.log(`  Last shown: ${person.lastPromptShown}`);
