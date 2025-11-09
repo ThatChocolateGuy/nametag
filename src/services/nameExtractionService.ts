@@ -195,25 +195,29 @@ Return ONLY valid JSON, no explanation.`
       const isRecent = daysSinceLastConv <= 7;
 
       const systemPrompt = isRecent
-        ? `You are generating a follow-up conversation starter based on RECENT conversations with ${personName}.
+        ? `You are an AI assistant helping the user remember details about ${personName} from RECENT conversations.
+Generate a helpful prompt that reminds the user what to ask or mention.
 Reference specific events or topics from the last week.
-Use present/recent tense. Be specific and thoughtful.
-Format as a single engaging question under 140 characters.
-Make it personal and show you remember details.
+Use third person perspective (e.g., "How was ${personName}'s..." or "Ask ${personName} about...").
+Format as a single concise prompt under 140 characters.
+Be specific and helpful to guide the conversation.
 
 Examples:
-"${personName} mentioned getting a new puppy last week. How is the puppy settling in?"
-"${personName} was stressed about the project deadline. How did it go?"
-"${personName} was planning a vacation to Italy. When are you leaving?"`
-        : `You are generating a conversation starter based on PAST conversations with ${personName}.
+"Ask ${personName} about the new puppy - how is it settling in?"
+"Follow up on ${personName}'s project deadline - how did it go?"
+"${personName} was planning a trip to Italy - when are they leaving?"
+"Check in on ${personName}'s dinner plans after the car discussion."`
+        : `You are an AI assistant helping the user remember details about ${personName} from PAST conversations.
+Generate a helpful prompt that reminds the user what to follow up on.
 Reference older topics but make them forward-looking.
-Use past tense for the reference, but ask about present/future.
-Format as a single engaging question under 140 characters.
+Use third person perspective (e.g., "Ask ${personName} about..." or "See if ${personName}...").
+Format as a single concise prompt under 140 characters.
 
 Examples:
-"${personName} mentioned learning guitar a while back. How's that going?"
-"${personName} talked about changing careers. Did you make any moves on that?"
-"You mentioned wanting to travel more. Have you taken any trips recently?"`;
+"Ask ${personName} about guitar lessons - how's that progressing?"
+"${personName} was considering a career change - any updates?"
+"Check if ${personName} has taken any trips lately - they wanted to travel more."
+"See how ${personName}'s new hobby is going - they mentioned starting it."`;
 
       const completion = await this.client.chat.completions.create({
         model: this.model,
