@@ -143,6 +143,7 @@ Return ONLY valid JSON, no explanation.`
   /**
    * Generate a conversation prompt/starter based on full conversation history
    * Uses recent conversations for specific prompts, older ones for general prompts
+   * Avoids topics that have been recently discussed
    * @param personName Name of the person
    * @param conversationHistory Full conversation history (chronological, oldest first)
    * @returns AI-generated conversation prompt (question format, < 140 chars)
@@ -170,6 +171,10 @@ Return ONLY valid JSON, no explanation.`
       // Build context from all conversations
       const allKeyPoints: string[] = [];
       const allTopics: string[] = [];
+      
+      // Track recently discussed topics (last 3 conversations) to avoid repetition
+      const recentTopics: string[] = [];
+      const recentConversations = conversationHistory.slice(-3); // Last 3 conversations
 
       for (const conv of conversationHistory) {
         if (conv.keyPoints) {
@@ -180,13 +185,26 @@ Return ONLY valid JSON, no explanation.`
         }
       }
 
+      // Extract topics from recent conversations to avoid
+      for (const conv of recentConversations) {
+        if (conv.topics) {
+          recentTopics.push(...conv.topics);
+        }
+        if (conv.keyPoints) {
+          recentTopics.push(...conv.keyPoints);
+        }
+      }
+
       // Create context string
       const contextParts: string[] = [];
       if (allKeyPoints.length > 0) {
-        contextParts.push(`Key points: ${allKeyPoints.join('; ')}`);
+        contextParts.push(`All key points from history: ${allKeyPoints.join('; ')}`);
       }
       if (allTopics.length > 0) {
-        contextParts.push(`Topics: ${allTopics.join(', ')}`);
+        contextParts.push(`All topics from history: ${allTopics.join(', ')}`);
+      }
+      if (recentTopics.length > 0) {
+        contextParts.push(`\nRECENTLY DISCUSSED (avoid these): ${recentTopics.join(', ')}`);
       }
 
       const context = contextParts.join('\n');
@@ -195,29 +213,37 @@ Return ONLY valid JSON, no explanation.`
       const isRecent = daysSinceLastConv <= 7;
 
       const systemPrompt = isRecent
-        ? `You are an AI assistant helping the user remember details about ${personName} from RECENT conversations.
+        ? `You are an AI assistant helping the user remember details about ${personName} from conversations.
 Generate a helpful prompt that reminds the user what to ask or mention.
-Reference specific events or topics from the last week.
+
+CRITICAL: You MUST avoid topics that were "RECENTLY DISCUSSED" in the context below.
+- Look for topics from OLDER conversations that haven't been followed up on
+- Or ask general questions about their well-being if all recent topics were covered
+- NEVER repeat a topic from the last 3 conversations
+
 Use third person perspective (e.g., "How was ${personName}'s..." or "Ask ${personName} about...").
 Format as a single concise prompt under 140 characters.
-Be specific and helpful to guide the conversation.
 
-Examples:
+Good examples (assuming these weren't recently discussed):
 "Ask ${personName} about the new puppy - how is it settling in?"
 "Follow up on ${personName}'s project deadline - how did it go?"
 "${personName} was planning a trip to Italy - when are they leaving?"
-"Check in on ${personName}'s dinner plans after the car discussion."`
-        : `You are an AI assistant helping the user remember details about ${personName} from PAST conversations.
-Generate a helpful prompt that reminds the user what to follow up on.
-Reference older topics but make them forward-looking.
+"Check how ${personName} has been doing overall - it's been a few days."`
+        : `You are an AI assistant helping the user remember details about ${personName} from past conversations.
+
+CRITICAL: You MUST avoid topics that were "RECENTLY DISCUSSED" in the context below.
+- Look for older unresolved topics or new areas to explore
+- Or ask general check-in questions
+- NEVER repeat a topic from the last 3 conversations
+
 Use third person perspective (e.g., "Ask ${personName} about..." or "See if ${personName}...").
 Format as a single concise prompt under 140 characters.
 
-Examples:
+Good examples (assuming these weren't recently discussed):
 "Ask ${personName} about guitar lessons - how's that progressing?"
 "${personName} was considering a career change - any updates?"
 "Check if ${personName} has taken any trips lately - they wanted to travel more."
-"See how ${personName}'s new hobby is going - they mentioned starting it."`;
+"See how ${personName} has been doing - it's been a while."`;
 
       const completion = await this.client.chat.completions.create({
         model: this.model,
@@ -248,6 +274,11 @@ Examples:
       // Fallback if empty
       if (!prompt) {
         return `How have things been going, ${personName}?`;
+      }
+
+      // Log what topics we're avoiding
+      if (recentTopics.length > 0) {
+        console.log(`  📋 Avoiding recently discussed: ${recentTopics.slice(0, 3).join(', ')}${recentTopics.length > 3 ? '...' : ''}`);
       }
 
       return prompt;
