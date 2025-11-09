@@ -159,7 +159,8 @@ Return ONLY valid JSON, no explanation.`
   ): Promise<string> {
     try {
       if (conversationHistory.length === 0) {
-        return `How have you been, ${personName}?`;
+        // Generate an engaging first-time prompt using AI
+        return await this.generateFirstMeetingPrompt(personName);
       }
 
       // Get most recent conversation
@@ -271,9 +272,15 @@ Good examples (assuming these weren't recently discussed):
         prompt = prompt.substring(0, 137) + '...';
       }
 
-      // Fallback if empty
+      // Fallback if empty - use varied prompts
       if (!prompt) {
-        return `How have things been going, ${personName}?`;
+        const fallbacks = [
+          `Ask ${personName} how things have been going.`,
+          `Check in on ${personName} - see how they're doing.`,
+          `See what's new with ${personName} lately.`,
+          `Find out what ${personName} has been up to.`
+        ];
+        prompt = fallbacks[Math.floor(Math.random() * fallbacks.length)];
       }
 
       // Log what topics we're avoiding
@@ -284,8 +291,77 @@ Good examples (assuming these weren't recently discussed):
       return prompt;
     } catch (error) {
       console.error('Error generating conversation prompt:', error);
-      // Fallback to a generic prompt
-      return `How have you been, ${personName}?`;
+      // Fallback to a friendly prompt
+      return `Ask ${personName} how they've been doing.`;
+    }
+  }
+
+  /**
+   * Generate an engaging prompt for first-time meetings
+   * @param personName Name of the person
+   * @returns AI-generated first meeting prompt
+   */
+  private async generateFirstMeetingPrompt(personName: string): Promise<string> {
+    try {
+      const systemPrompt = `You are an AI assistant helping the user start a conversation with ${personName} for the first time.
+Generate a warm, engaging conversation starter that feels natural and friendly.
+
+Guidelines:
+- Use third person perspective (e.g., "Ask ${personName} about..." or "See what ${personName}...")
+- Make it open-ended and easy to respond to
+- Keep it under 140 characters
+- Be casual and welcoming
+- Suggest topics that are universally relatable (work, hobbies, interests, weekend plans, etc.)
+
+Good examples:
+"Ask ${personName} what they've been working on lately."
+"See what ${personName} likes to do for fun outside of work."
+"Find out what ${personName} has been up to this week."
+"Ask ${personName} about any hobbies or interests they're passionate about."
+"See if ${personName} has any exciting plans coming up."`;
+
+      const completion = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: `Generate a friendly first-time conversation prompt for ${personName}.`
+          }
+        ],
+        temperature: 0.9, // Higher creativity for varied prompts
+        max_tokens: 50
+      });
+
+      let prompt = completion.choices[0]?.message?.content?.trim() || '';
+
+      // Remove quotes if AI added them
+      prompt = prompt.replace(/^["']|["']$/g, '');
+
+      // Ensure it's a reasonable length
+      if (prompt.length > 140) {
+        prompt = prompt.substring(0, 137) + '...';
+      }
+
+      // Fallback if generation fails
+      if (!prompt) {
+        const fallbacks = [
+          `Ask ${personName} what they've been up to recently.`,
+          `See what ${personName} enjoys doing in their free time.`,
+          `Find out what ${personName} is currently working on.`,
+          `Ask ${personName} about any interesting projects or hobbies.`
+        ];
+        prompt = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+      }
+
+      return prompt;
+    } catch (error) {
+      console.error('Error generating first meeting prompt:', error);
+      // Friendly fallback
+      return `Ask ${personName} what they've been up to lately.`;
     }
   }
 
