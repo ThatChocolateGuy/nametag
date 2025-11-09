@@ -306,13 +306,33 @@ export class ConversationManager {
           // Add to conversation history
           const updatedHistory = [...(person.conversationHistory || []), conversationEntry];
 
+          // Check if the conversation addressed the current prompt (if one exists)
+          let promptWasAddressed = false;
+          if (person.conversationPrompt && !person.promptAddressed) {
+            try {
+              console.log(`🔍 Checking if conversation addressed prompt for ${name}...`);
+              promptWasAddressed = await this.nameExtractor.wasPromptAddressed(
+                transcript,
+                person.conversationPrompt
+              );
+              if (promptWasAddressed) {
+                console.log(`  ✓ Prompt was addressed - will generate new topic next time`);
+              } else {
+                console.log(`  ℹ Prompt not addressed - may show again`);
+              }
+            } catch (error) {
+              console.error(`  ⚠️  Error checking prompt status:`, error);
+            }
+          }
+
           // Update with latest conversation info (for backward compatibility)
           await this.memoryClient.storePerson({
             ...person,
             conversationHistory: updatedHistory,
             lastConversation: summary.summary,
             lastTopics: summary.mainTopics,
-            lastMet: new Date()
+            lastMet: new Date(),
+            promptAddressed: promptWasAddressed  // Mark if the prompt was addressed
           });
 
           // Generate new conversation prompt based on updated history
@@ -333,7 +353,8 @@ export class ConversationManager {
               conversationPrompt: newPrompt,
               promptGeneratedDate: new Date(),
               promptShownCount: 0,  // Reset count with new prompt
-              lastPromptShown: undefined  // Allow immediate showing
+              lastPromptShown: undefined,  // Allow immediate showing
+              promptAddressed: false  // Reset flag for new prompt
             });
 
             console.log(`✓ Generated prompt for ${name}: "${newPrompt.substring(0, 50)}${newPrompt.length > 50 ? '...' : ''}"`);

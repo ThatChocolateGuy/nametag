@@ -259,6 +259,56 @@ Examples:
   }
 
   /**
+   * Check if a conversation addressed the topics in a prompt
+   * Uses AI to determine if the conversation content relates to the prompt topic
+   * @param conversationTranscript The full conversation transcript
+   * @param promptText The conversation prompt that was shown
+   * @returns true if the conversation addressed the prompt topic
+   */
+  async wasPromptAddressed(
+    conversationTranscript: string,
+    promptText: string
+  ): Promise<boolean> {
+    try {
+      if (!promptText || !conversationTranscript) {
+        return false;
+      }
+
+      const systemPrompt = `You are analyzing whether a conversation addressed a specific topic that was suggested.
+
+Your task: Determine if the conversation discusses or mentions the topic from the prompt.
+- If the conversation includes ANY discussion related to the prompt topic, return "yes"
+- If the conversation is completely unrelated, return "no"
+- Be lenient - even brief mentions count as addressing the topic
+
+Return ONLY "yes" or "no", nothing else.`;
+
+      const completion = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: `Prompt topic: "${promptText}"\n\nConversation:\n${conversationTranscript}\n\nWas the prompt topic addressed?`
+          }
+        ],
+        temperature: 0.1, // Low temperature for consistent yes/no answers
+        max_tokens: 5
+      });
+
+      const answer = completion.choices[0]?.message?.content?.trim().toLowerCase() || 'no';
+      return answer === 'yes';
+    } catch (error) {
+      console.error('Error checking if prompt was addressed:', error);
+      // Default to false to be conservative (might show prompt again)
+      return false;
+    }
+  }
+
+  /**
    * Match speaker to known person by analyzing context
    */
   async matchSpeakerToPerson(

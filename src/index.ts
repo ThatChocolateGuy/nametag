@@ -402,7 +402,7 @@ class MemoryGlassesApp extends AppServer {
 
   /**
    * Check if we should show the conversation prompt for this person
-   * Returns true if prompt exists and hasn't been shown too recently
+   * Returns true if prompt exists and hasn't been shown too recently or already addressed
    */
   private shouldShowPrompt(person: any): boolean {
     console.log(`\n🔍 Checking if prompt should be shown for ${person.name}:`);
@@ -410,10 +410,17 @@ class MemoryGlassesApp extends AppServer {
     console.log(`  Prompt: "${person.conversationPrompt?.substring(0, 50)}${person.conversationPrompt?.length > 50 ? '...' : ''}"`);
     console.log(`  Last shown: ${person.lastPromptShown}`);
     console.log(`  Show count: ${person.promptShownCount || 0}`);
+    console.log(`  Prompt addressed: ${person.promptAddressed || false}`);
 
     // No prompt available
     if (!person.conversationPrompt) {
       console.log(`  ❌ No prompt available`);
+      return false;
+    }
+
+    // Don't show if already addressed
+    if (person.promptAddressed) {
+      console.log(`  ❌ Prompt already addressed in previous conversation - skipping`);
       return false;
     }
 

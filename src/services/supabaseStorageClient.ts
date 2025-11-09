@@ -21,6 +21,7 @@ export interface Person {
   promptGeneratedDate?: Date;   // When prompt was last generated
   promptShownCount?: number;     // Times prompt has been shown
   lastPromptShown?: Date;        // Last time prompt was displayed
+  promptAddressed?: boolean;     // Whether the user responded to the prompt topic
 }
 
 interface DatabasePerson {
@@ -34,6 +35,7 @@ interface DatabasePerson {
   prompt_generated_date?: string;
   prompt_shown_count?: number;
   last_prompt_shown?: string;
+  prompt_addressed?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -163,7 +165,8 @@ export class SupabaseStorageClient {
       conversationPrompt: dbPerson.conversation_prompt,
       promptGeneratedDate: dbPerson.prompt_generated_date ? new Date(dbPerson.prompt_generated_date) : undefined,
       promptShownCount: dbPerson.prompt_shown_count,
-      lastPromptShown: dbPerson.last_prompt_shown ? new Date(dbPerson.last_prompt_shown) : undefined
+      lastPromptShown: dbPerson.last_prompt_shown ? new Date(dbPerson.last_prompt_shown) : undefined,
+      promptAddressed: dbPerson.prompt_addressed
     };
   }
 
@@ -197,7 +200,8 @@ export class SupabaseStorageClient {
             conversation_prompt: person.conversationPrompt,
             prompt_generated_date: person.promptGeneratedDate?.toISOString(),
             prompt_shown_count: person.promptShownCount ?? 0,
-            last_prompt_shown: person.lastPromptShown ? person.lastPromptShown.toISOString() : null
+            last_prompt_shown: person.lastPromptShown ? person.lastPromptShown.toISOString() : null,
+            prompt_addressed: person.promptAddressed ?? false
           })
           .eq('id', existing.id);
 
@@ -225,7 +229,8 @@ export class SupabaseStorageClient {
             conversation_prompt: person.conversationPrompt,
             prompt_generated_date: person.promptGeneratedDate?.toISOString(),
             prompt_shown_count: person.promptShownCount ?? 0,
-            last_prompt_shown: person.lastPromptShown ? person.lastPromptShown.toISOString() : null
+            last_prompt_shown: person.lastPromptShown ? person.lastPromptShown.toISOString() : null,
+            prompt_addressed: person.promptAddressed ?? false
           })
           .select('id')
           .single();
