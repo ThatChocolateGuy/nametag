@@ -1,6 +1,6 @@
 {
   "name": "nametag",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "description": "Voice biometric recognition app for Even Realities G1 smart glasses - remember everyone you meet",
   "main": "dist/index.js",
   "scripts": {
