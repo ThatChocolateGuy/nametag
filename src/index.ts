@@ -47,7 +47,7 @@ class MemoryGlassesApp extends AppServer {
     this.transcriptionService = new OpenAITranscriptionService(OPENAI_API_KEY);
 
     console.log('\n╔═════════════════════════════════════════╗');
-    console.log('║        Nametag v2.0 - G1 Glasses        ║');
+    console.log('║        Nametag v1.0 - G1 Glasses        ║');
     console.log('╚═════════════════════════════════════════╝\n');
     console.log('Services ready:');
     console.log('- Supabase Storage Client (PostgreSQL)');

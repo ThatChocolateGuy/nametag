@@ -183,7 +183,7 @@ Check Railway dashboard to verify deployment status.
 
    ```md
    ╔══════════════════════════════════════════╗
-   ║   Nametag v2.0 - G1 Glasses              ║
+   ║   Nametag v1.0 - G1 Glasses              ║
    ╚══════════════════════════════════════════╝
 
    ✓ Server started on port 3000
